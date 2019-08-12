@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package protobuf;
+
+message Envelope {
+	uint64 Version    = 1; // Protocol specific version
+	bytes  Type       = 2; // Data type of payload.
+	bytes  Identifier = 3; // Protocol specific identifier for the payload (i.e. message type, data name)
+
+	MetaNet MetaNet = 4;
+
+	repeated EncryptedPayload EncryptedPayloads = 5;
+}
+
+message MetaNet {
+	uint32 Index = 1; // The index of the input containing the public key.
+	bytes Parent = 2; // The 32 byte txid of the parent.
+}
+
+message EncryptedPayload {
+    uint32 Sender = 1;
+    repeated Receiver Receivers = 2;
+    bytes Payload = 3;
+}
+
+message Receiver {
+    uint32 Index = 1;
+    bytes EncryptedKey = 2;
+}
