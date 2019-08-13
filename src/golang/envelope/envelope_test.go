@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/tokenized/envelope/src/golang/internal/v0/protobuf"
+	"github.com/tokenized/envelope/src/golang/envelope/v0"
+	"github.com/tokenized/envelope/src/golang/envelope/v0/protobuf"
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
 	"github.com/tokenized/smart-contract/pkg/wire"
+
+	"github.com/golang/protobuf/proto"
 )
 
 var retentionTests = []struct {
@@ -49,13 +51,13 @@ var retentionTests = []struct {
 
 func TestRetention(t *testing.T) {
 	for i, test := range retentionTests {
-		message := NewMessage(test.protocol, test.version, test.payload)
+		message := v0.NewMessage(test.protocol, test.version, test.payload)
 
 		if len(test.payloadType) > 0 {
-			message.AddType(test.payloadType)
+			message.SetPayloadType(test.payloadType)
 		}
 		if len(test.identifier) > 0 {
-			message.AddIdentifier(test.identifier)
+			message.SetPayloadIdentifier(test.identifier)
 		}
 
 		var buf bytes.Buffer
@@ -70,20 +72,20 @@ func TestRetention(t *testing.T) {
 			t.Fatalf("Test %d Failed Deserialize : %s", i, err)
 		}
 
-		if !bytes.Equal(test.protocol, read.Protocol) {
-			t.Fatalf("Test %d protocol wasn't retained : want 0x%x, got 0x%x", i+1, test.protocol, read.Protocol)
+		if !bytes.Equal(test.protocol, read.PayloadProtocol()) {
+			t.Fatalf("Test %d protocol wasn't retained : want 0x%x, got 0x%x", i+1, test.protocol, read.PayloadProtocol())
 		}
-		if test.version != read.Version {
-			t.Fatalf("Test %d version wasn't retained : want %d, got %d", i+1, test.version, read.Version)
+		if test.version != read.PayloadVersion() {
+			t.Fatalf("Test %d version wasn't retained : want %d, got %d", i+1, test.version, read.PayloadVersion())
 		}
-		if !bytes.Equal(test.payloadType, read.PayloadType) {
-			t.Fatalf("Test %d payload type wasn't retained : want 0x%x, got 0x%x", i+1, test.payloadType, read.PayloadType)
+		if !bytes.Equal(test.payloadType, read.PayloadType()) {
+			t.Fatalf("Test %d payload type wasn't retained : want 0x%x, got 0x%x", i+1, test.payloadType, read.PayloadType())
 		}
-		if !bytes.Equal(test.identifier, read.Identifier) {
-			t.Fatalf("Test %d identifier wasn't retained : want 0x%x, got 0x%x", i+1, test.identifier, read.Identifier)
+		if !bytes.Equal(test.identifier, read.PayloadIdentifier()) {
+			t.Fatalf("Test %d identifier wasn't retained : want 0x%x, got 0x%x", i+1, test.identifier, read.PayloadIdentifier())
 		}
-		if !bytes.Equal(test.payload, read.Payload) {
-			t.Fatalf("Test %d payload wasn't retained : want 0x%x, got 0x%x", i+1, test.payload, read.Payload)
+		if !bytes.Equal(test.payload, read.Payload()) {
+			t.Fatalf("Test %d payload wasn't retained : want 0x%x, got 0x%x", i+1, test.payload, read.Payload())
 		}
 	}
 }
@@ -158,7 +160,7 @@ var encryptionTests = []struct {
 
 func TestEncryptionNoReceiver(t *testing.T) {
 	for i, test := range encryptionTests {
-		message := NewMessage(test.protocol, test.version, test.payload)
+		message := v0.NewMessage(test.protocol, test.version, test.payload)
 		sender, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
 
 		var fakeScriptBuf bytes.Buffer
@@ -188,18 +190,20 @@ func TestEncryptionNoReceiver(t *testing.T) {
 		}
 
 		reader := bytes.NewReader(buf.Bytes())
-		read, err := Deserialize(reader)
+		baseRead, err := Deserialize(reader)
 		if err != nil {
 			t.Fatalf("Test %d failed deserialize : %s", i, err)
 		}
-
-		encryptedPayloads := read.GetEncryptedPayloads()
-		if len(encryptedPayloads) != 1 {
-			t.Fatalf("Test %d wrong amount of encrypted payloads : %d", i, len(encryptedPayloads))
+		read, ok := baseRead.(*v0.Message)
+		if !ok {
+			t.Fatalf("Test %d failed to convert read to v0 message", i+1)
 		}
 
-		encryptedPayload := encryptedPayloads[0]
+		if read.EncryptedPayloadCount() != 1 {
+			t.Fatalf("Test %d wrong amount of encrypted payloads : %d", i, read.EncryptedPayloadCount())
+		}
 
+		encryptedPayload := read.EncryptedPayload(0)
 		encPayload, err := encryptedPayload.SenderDecrypt(tx, sender, nil)
 		if err != nil {
 			t.Fatalf("Test %d failed decrypt : %s", i, err)
@@ -214,7 +218,7 @@ func TestEncryptionNoReceiver(t *testing.T) {
 
 func TestEncryptionSingleReceiver(t *testing.T) {
 	for i, test := range encryptionTests {
-		message := NewMessage(test.protocol, test.version, test.payload)
+		message := v0.NewMessage(test.protocol, test.version, test.payload)
 		sender, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
 		receiver, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
 
@@ -239,18 +243,20 @@ func TestEncryptionSingleReceiver(t *testing.T) {
 		}
 
 		reader := bytes.NewReader(buf.Bytes())
-		read, err := Deserialize(reader)
+		baseRead, err := Deserialize(reader)
 		if err != nil {
 			t.Fatalf("Test %d failed deserialize : %s", i, err)
 		}
-
-		encryptedPayloads := read.GetEncryptedPayloads()
-		if len(encryptedPayloads) != 1 {
-			t.Fatalf("Test %d wrong amount of encrypted payloads : %d", i, len(encryptedPayloads))
+		read, ok := baseRead.(*v0.Message)
+		if !ok {
+			t.Fatalf("Test %d failed to convert read to v0 message", i+1)
 		}
 
-		encryptedPayload := encryptedPayloads[0]
+		if read.EncryptedPayloadCount() != 1 {
+			t.Fatalf("Test %d wrong amount of encrypted payloads : %d", i, read.EncryptedPayloadCount())
+		}
 
+		encryptedPayload := read.EncryptedPayload(0)
 		encPayload, err := encryptedPayload.SenderDecrypt(tx, sender, receiver.PublicKey())
 		if err != nil {
 			t.Fatalf("Test %d failed decrypt : %s", i, err)
@@ -265,7 +271,7 @@ func TestEncryptionSingleReceiver(t *testing.T) {
 
 func TestEncryptionMultiReceiver(t *testing.T) {
 	for i, test := range encryptionTests {
-		message := NewMessage(test.protocol, test.version, test.payload)
+		message := v0.NewMessage(test.protocol, test.version, test.payload)
 		sender, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
 		receiver1, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
 		receiver2, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
@@ -294,18 +300,20 @@ func TestEncryptionMultiReceiver(t *testing.T) {
 		}
 
 		reader := bytes.NewReader(buf.Bytes())
-		read, err := Deserialize(reader)
+		baseRead, err := Deserialize(reader)
 		if err != nil {
 			t.Fatalf("Test %d failed deserialize : %s", i, err)
 		}
-
-		encryptedPayloads := read.GetEncryptedPayloads()
-		if len(encryptedPayloads) != 1 {
-			t.Fatalf("Test %d wrong amount of encrypted payloads : %d", i, len(encryptedPayloads))
+		read, ok := baseRead.(*v0.Message)
+		if !ok {
+			t.Fatalf("Test %d failed to convert read to v0 message", i+1)
 		}
 
-		encryptedPayload := encryptedPayloads[0]
+		if read.EncryptedPayloadCount() != 1 {
+			t.Fatalf("Test %d wrong amount of encrypted payloads : %d", i, read.EncryptedPayloadCount())
+		}
 
+		encryptedPayload := read.EncryptedPayload(0)
 		encPayload, err := encryptedPayload.SenderDecrypt(tx, sender, receiver2.PublicKey())
 		if err != nil {
 			t.Fatalf("Test %d failed decrypt : %s", i, err)
@@ -320,7 +328,7 @@ func TestEncryptionMultiReceiver(t *testing.T) {
 
 func TestEncryptionProtobuf(t *testing.T) {
 	mnIndex := &protobuf.MetaNet{
-		Index:  2,
+		Index: 2,
 	}
 	mnParent := &protobuf.MetaNet{
 		Parent: []byte("01234567890123456789012345678901"),
@@ -334,7 +342,7 @@ func TestEncryptionProtobuf(t *testing.T) {
 		t.Fatalf("Failed to serialize metanet parent : %s", err)
 	}
 
-	message := NewMessage([]byte("test"), 0, payload)
+	message := v0.NewMessage([]byte("test"), 0, payload)
 	sender, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
 	receiver1, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
 	receiver2, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
@@ -363,18 +371,20 @@ func TestEncryptionProtobuf(t *testing.T) {
 	}
 
 	reader := bytes.NewReader(buf.Bytes())
-	read, err := Deserialize(reader)
+	baseRead, err := Deserialize(reader)
 	if err != nil {
 		t.Fatalf("Test failed deserialize : %s", err)
 	}
-
-	encryptedPayloads := read.GetEncryptedPayloads()
-	if len(encryptedPayloads) != 1 {
-		t.Fatalf("Test wrong amount of encrypted payloads : %d", len(encryptedPayloads))
+	read, ok := baseRead.(*v0.Message)
+	if !ok {
+		t.Fatalf("Test failed to convert read to v0 message")
 	}
 
-	readEncryptedPayload := encryptedPayloads[0]
+	if read.EncryptedPayloadCount() != 1 {
+		t.Fatalf("Test wrong amount of encrypted payloads : %d", read.EncryptedPayloadCount())
+	}
 
+	readEncryptedPayload := read.EncryptedPayload(0)
 	encPayload, err := readEncryptedPayload.SenderDecrypt(tx, sender, receiver2.PublicKey())
 	if err != nil {
 		t.Fatalf("Test failed decrypt : %s", err)
@@ -384,7 +394,7 @@ func TestEncryptionProtobuf(t *testing.T) {
 		t.Fatalf("Test encrypted payload doesn't match :\nwant 0x%x\ngot  0x%x", encryptedPayload, encPayload)
 	}
 
-	compositePayload := append(encPayload, read.Payload...)
+	compositePayload := append(encPayload, read.Payload()...)
 
 	var readMN protobuf.MetaNet
 	if err = proto.Unmarshal(compositePayload, &readMN); err != nil {

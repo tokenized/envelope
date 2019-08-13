@@ -12,11 +12,11 @@ tools:
 	go get golang.org/x/tools/cmd/goimports
 
 test:
-	mkdir tmp || echo "directory tmp already exists"
+	@mkdir tmp || echo "directory tmp already exists"
 	go test ./...
 
 dist:
-	mkdir dist || echo "directory dist already exists"
+	@mkdir dist || echo "directory dist already exists"
 	go build -o dist/$(BINARY_CLI) cmd/$(BINARY_CLI)/main.go
 
 format:

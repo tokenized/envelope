@@ -43,12 +43,10 @@ type Receiver struct {
 	encryptedKey []byte
 }
 
-func NewEncryptedPayload(payload []byte, tx *wire.MsgTx, senderIndex uint32,
-	sender bitcoin.Key, receivers []bitcoin.PublicKey) (*EncryptedPayload, error) {
+func NewEncryptedPayload(payload []byte, tx *wire.MsgTx, senderIndex uint32, sender bitcoin.Key,
+	receivers []bitcoin.PublicKey) (*EncryptedPayload, error) {
 
-	result := &EncryptedPayload{
-		sender: senderIndex,
-	}
+	result := &EncryptedPayload{sender: senderIndex}
 	var encryptionKey []byte
 
 	if len(receivers) == 0 { // Private to sender

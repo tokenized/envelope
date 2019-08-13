@@ -34,7 +34,9 @@ make
 
 ## Project Structure
 
-- `golang` - Go language implementation.
+- `protobuf` - Protocol Buffer message definitions shared between languages.
+- `src/golang` - Go language implementation.
+- `src/typescript` - Go language implementation.
 
 ## Data Structure
 
@@ -57,3 +59,30 @@ If the main payload is protobuf encoded, then the encrypted payloads can also co
 
 `PUSH_OP Payload`
 The envelopes main payload.
+
+## Usage
+
+The `envelope` package provides a common interface to all versions of the protocol. Creating messages and the more advanced features, like MetaNet and Encryption, require directly using the version specific packages like `v0`.
+
+#### Sample Code
+```
+// Create Message
+message := v0.NewMessage([]byte("tokenized"), 0, payload) // Tokenized version 0 payload
+
+var buf bytes.Buffer
+err := message.Serialize(&buf)
+if err != nil {
+    log.Fatalf("Failed Serialize : %s", err)
+}
+
+// Read Message
+reader := bytes.NewReader(buf.Bytes())
+readMessage, err := envelope.Deserialize(reader)
+if err != nil {
+	log.Fatalf("Failed Deserialize : %s", err)
+}
+
+if bytes.Equal(readMessage.PayloadProtocol(), []byte("tokenized"))  {
+	// Process tokenized payload
+}
+```
