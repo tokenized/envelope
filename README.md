@@ -1,8 +1,12 @@
 # Envelope System
 
-This repository provides common encoding and functions for wrapping data in Bitcoin OP_RETURN scripts.
+This repository provides common encoding system for wrapping data in Bitcoin OP_RETURN scripts.
 
-It provides a common system for identifying the protocol of the contained data as well as encryption and providing a data hierarchy through MetaNet.
+It provides a common system for identifying the payload data protocol, providing MetaNet hierarchy information, and encrypting some or all of the payload.
+It supports 3 encryption scenarios through the use of Bitcoin private and public keys, input and output scripts, and Elliptic Curve Diffie Hellman for encryption key generation and sharing.
+- Encrypting data privately.
+- Encrypting data to be shared with one recipient.
+- Encrypting data to be shared with multiple recipients.
 
 ### License
 
@@ -32,4 +36,24 @@ make
 
 - `golang` - Go language implementation.
 
-## Usage
+## Data Structure
+
+The data is encoded as an unspendable OP_RETURN Bitcoin locking (output) script.
+
+`OP_FALSE`
+`OP_RETURN`
+Ensure the output is provably unspendable.
+
+`0x02 0xbd 0x00`
+Push data containing 2 bytes. 0xbd is the envelope protocol ID and 0x00 is the envelope version.
+
+`PUSH_OP Payload Protocol ID`
+Push data containing the identifier of the payload's protocol.
+
+`PUSH_OP Envelope Data`
+Push data containing [protobuf](https://developers.google.com/protocol-buffers/) encoded data containing payload protocol version, content type, and content identifier as well as MetaNet and encrypted payloads.
+
+If the main payload is protobuf encoded, then the encrypted payloads can also contain protobuf encoded data that can be appended to the payload before decoding with protobuf. This allows selected fields to be encrypted.
+
+`PUSH_OP Payload`
+The envelopes main payload.

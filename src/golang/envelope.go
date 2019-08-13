@@ -12,18 +12,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	ErrNotEnvelope = errors.New("Not an envelope")
-
-	envelopeVersion = uint8(0) // Current Envelope Protocol Version
-	baseHeader      = []byte{
-		bitcoin.OP_FALSE,  // Unspendable
-		bitcoin.OP_RETURN, // OP_RETURN
-		2,                 // Push two bytes
-		0xbd,              // Envelope Protocol ID
-		envelopeVersion}   // Envelope Protocol Version
-)
-
 type Message struct {
 	envelopeVersion   uint8  // Envelope protocol version
 	Protocol          []byte // Protocol ID of payload. (recommended to be ascii text)
@@ -112,6 +100,18 @@ func (m *Message) AddEncryptedPayload(payload []byte, tx *wire.MsgTx, senderInde
 func (m *Message) GetEncryptedPayloads() []EncryptedPayload {
 	return m.encryptedPayloads
 }
+
+var (
+	ErrNotEnvelope = errors.New("Not an envelope")
+
+	envelopeVersion = uint8(0) // Current Envelope Protocol Version
+	baseHeader      = []byte{
+		bitcoin.OP_FALSE,  // Unspendable
+		bitcoin.OP_RETURN, // OP_RETURN
+		2,                 // Push two bytes
+		0xbd,              // Envelope Protocol ID
+		envelopeVersion}   // Envelope Protocol Version
+)
 
 // Serialize creates an OP_RETURN script in the "envelope" format containing the specified data.
 func (m *Message) Serialize(buf *bytes.Buffer) error {
