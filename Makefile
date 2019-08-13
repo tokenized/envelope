@@ -22,5 +22,5 @@ dist:
 format:
 	goimports -w ./
 
-protobuf:
-	protoc -I internal/version_0/protobuf/ internal/version_0/protobuf/messages.proto --go_out=plugins=grpc:internal/version_0/protobuf
+protoc:
+	protoc --proto_path=protobuf --go_out=plugins=grpc:src/golang/internal/v0/protobuf --js_out=library=protobuf,binary:src/typescript/v0 protobuf/messages.proto

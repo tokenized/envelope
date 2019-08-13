@@ -2,9 +2,10 @@ package envelope
 
 import (
 	"bytes"
-	"crypto/aes"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/tokenized/envelope/src/golang/internal/v0/protobuf"
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
 	"github.com/tokenized/smart-contract/pkg/wire"
 )
@@ -109,7 +110,49 @@ var encryptionTests = []struct {
 		protocol:         []byte{0xbe, 0xef},
 		version:          1,
 		payload:          nil,
+		encryptedPayload: nil,
+	},
+	{
+		protocol:         []byte{0xbe, 0xef},
+		version:          1,
+		payload:          nil,
 		encryptedPayload: []byte("test"), // less than aes block size of 16
+	},
+	{
+		protocol:         []byte{0xbe, 0xef},
+		version:          1,
+		payload:          nil,
+		encryptedPayload: []byte("testtesttesttest"), // exactly block size
+	},
+	{
+		protocol:         []byte{0xbe, 0xef},
+		version:          1,
+		payload:          nil,
+		encryptedPayload: []byte{0xff},
+	},
+	{
+		protocol:         []byte{0xbe, 0xef},
+		version:          1,
+		payload:          nil,
+		encryptedPayload: []byte{0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	},
+	{
+		protocol:         []byte{0xbe, 0xef},
+		version:          1,
+		payload:          nil,
+		encryptedPayload: []byte{0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff},
+	},
+	{
+		protocol:         []byte{0xbe, 0xef},
+		version:          1,
+		payload:          nil,
+		encryptedPayload: []byte{0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff},
+	},
+	{
+		protocol:         []byte{0xbe, 0xef},
+		version:          1,
+		payload:          nil,
+		encryptedPayload: []byte{0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x00},
 	},
 }
 
@@ -162,17 +205,9 @@ func TestEncryptionNoReceiver(t *testing.T) {
 			t.Fatalf("Test %d failed decrypt : %s", i, err)
 		}
 
-		paddedPayload := test.encryptedPayload
-		size := len(paddedPayload)
-		if size > 0 {
-			if size%aes.BlockSize != 0 {
-				paddedPayload = make([]byte, size+(aes.BlockSize-(size%aes.BlockSize)))
-				copy(paddedPayload, test.encryptedPayload)
-			}
-		}
-
-		if !bytes.Equal(paddedPayload, encPayload) {
-			t.Fatalf("Test %d encrypted payload doesn't match :\nwant 0x%x\ngot  0x%x", i+1, paddedPayload, encPayload)
+		if !bytes.Equal(test.encryptedPayload, encPayload) {
+			t.Fatalf("Test %d encrypted payload doesn't match :\nwant 0x%x\ngot  0x%x", i+1,
+				test.encryptedPayload, encPayload)
 		}
 	}
 }
@@ -221,17 +256,9 @@ func TestEncryptionSingleReceiver(t *testing.T) {
 			t.Fatalf("Test %d failed decrypt : %s", i, err)
 		}
 
-		paddedPayload := test.encryptedPayload
-		size := len(paddedPayload)
-		if size > 0 {
-			if size%aes.BlockSize != 0 {
-				paddedPayload = make([]byte, size+(aes.BlockSize-(size%aes.BlockSize)))
-				copy(paddedPayload, test.encryptedPayload)
-			}
-		}
-
-		if !bytes.Equal(paddedPayload, encPayload) {
-			t.Fatalf("Test %d encrypted payload doesn't match :\nwant 0x%x\ngot  0x%x", i+1, paddedPayload, encPayload)
+		if !bytes.Equal(test.encryptedPayload, encPayload) {
+			t.Fatalf("Test %d encrypted payload doesn't match :\nwant 0x%x\ngot  0x%x", i+1,
+				test.encryptedPayload, encPayload)
 		}
 	}
 }
@@ -284,18 +311,92 @@ func TestEncryptionMultiReceiver(t *testing.T) {
 			t.Fatalf("Test %d failed decrypt : %s", i, err)
 		}
 
-		paddedPayload := test.encryptedPayload
-		size := len(paddedPayload)
-		if size > 0 {
-			if size%aes.BlockSize != 0 {
-				paddedPayload = make([]byte, size+(aes.BlockSize-(size%aes.BlockSize)))
-				copy(paddedPayload, test.encryptedPayload)
-			}
+		if !bytes.Equal(test.encryptedPayload, encPayload) {
+			t.Fatalf("Test %d encrypted payload doesn't match :\nwant 0x%x\ngot  0x%x", i+1,
+				test.encryptedPayload, encPayload)
 		}
+	}
+}
 
-		if !bytes.Equal(paddedPayload, encPayload) {
-			t.Fatalf("Test %d encrypted payload doesn't match :\nwant 0x%x\ngot  0x%x", i+1, paddedPayload, encPayload)
-		}
+func TestEncryptionProtobuf(t *testing.T) {
+	mnIndex := &protobuf.MetaNet{
+		Index:  2,
+	}
+	mnParent := &protobuf.MetaNet{
+		Parent: []byte("01234567890123456789012345678901"),
+	}
+	encryptedPayload, err := proto.Marshal(mnIndex)
+	if err != nil {
+		t.Fatalf("Failed to serialize metanet index : %s", err)
+	}
+	payload, err := proto.Marshal(mnParent)
+	if err != nil {
+		t.Fatalf("Failed to serialize metanet parent : %s", err)
+	}
+
+	message := NewMessage([]byte("test"), 0, payload)
+	sender, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
+	receiver1, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
+	receiver2, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
+
+	tx := wire.NewMsgTx(2)
+	if err = addFakeInput(tx, sender); err != nil {
+		t.Fatalf("Test failed to add input : %s", err)
+	}
+	if err = addFakeOutput(tx, receiver1); err != nil {
+		t.Fatalf("Test failed to add output : %s", err)
+	}
+	if err = addFakeOutput(tx, receiver2); err != nil {
+		t.Fatalf("Test failed to add output : %s", err)
+	}
+
+	err = message.AddEncryptedPayload(encryptedPayload, tx, 0, sender,
+		[]bitcoin.PublicKey{receiver1.PublicKey(), receiver2.PublicKey()})
+	if err != nil {
+		t.Fatalf("Test add encrypted payload failed : %s", err)
+	}
+
+	var buf bytes.Buffer
+	err = message.Serialize(&buf)
+	if err != nil {
+		t.Fatalf("Test failed serialize : %s", err)
+	}
+
+	reader := bytes.NewReader(buf.Bytes())
+	read, err := Deserialize(reader)
+	if err != nil {
+		t.Fatalf("Test failed deserialize : %s", err)
+	}
+
+	encryptedPayloads := read.GetEncryptedPayloads()
+	if len(encryptedPayloads) != 1 {
+		t.Fatalf("Test wrong amount of encrypted payloads : %d", len(encryptedPayloads))
+	}
+
+	readEncryptedPayload := encryptedPayloads[0]
+
+	encPayload, err := readEncryptedPayload.SenderDecrypt(tx, sender, receiver2.PublicKey())
+	if err != nil {
+		t.Fatalf("Test failed decrypt : %s", err)
+	}
+
+	if !bytes.Equal(encryptedPayload, encPayload) {
+		t.Fatalf("Test encrypted payload doesn't match :\nwant 0x%x\ngot  0x%x", encryptedPayload, encPayload)
+	}
+
+	compositePayload := append(encPayload, read.Payload...)
+
+	var readMN protobuf.MetaNet
+	if err = proto.Unmarshal(compositePayload, &readMN); err != nil {
+		t.Fatalf("Test failed unmarshal protobuf : %s", err)
+	}
+
+	if readMN.GetIndex() != mnIndex.GetIndex() {
+		t.Fatalf("Test failed MetaNet index mismatch : got %d want %d", readMN.GetIndex(), mnIndex.GetIndex())
+	}
+
+	if !bytes.Equal(readMN.GetParent(), mnParent.GetParent()) {
+		t.Fatalf("Test failed MetaNet index mismatch : got %x want %x", readMN.GetParent(), mnParent.GetParent())
 	}
 }
 

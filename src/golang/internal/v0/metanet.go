@@ -1,9 +1,10 @@
-package version_0
+package v0
 
 import (
-	"github.com/pkg/errors"
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
 	"github.com/tokenized/smart-contract/pkg/wire"
+
+	"github.com/pkg/errors"
 )
 
 type MetaNet struct {

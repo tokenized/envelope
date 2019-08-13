@@ -1,4 +1,4 @@
-package version_0
+package v0
 
 import (
 	"bytes"
@@ -12,6 +12,10 @@ import (
 	"github.com/tokenized/smart-contract/pkg/wire"
 
 	"github.com/btcsuite/btcd/btcec"
+)
+
+var (
+	ErrDecryptInvalid = errors.New("Decrypt invalid")
 )
 
 // EncryptedPayload holds encrypted data.
@@ -314,15 +318,15 @@ func ecdhSecret(k bitcoin.Key, pub bitcoin.PublicKey) ([]byte, error) {
 // encrypt generates a random IV prepends it to the output, then uses AES with the input keysize and
 //   CBC to encrypt the payload.
 func encrypt(payload, key []byte) ([]byte, error) {
+	// Append 0xff to end of payload so padding, for block alignment, can be removed.
 	size := len(payload)
-	if size == 0 {
-		return nil, nil
+	newSize := size + 1
+	if newSize%aes.BlockSize != 0 {
+		newSize = newSize + (aes.BlockSize - (newSize % aes.BlockSize))
 	}
-	plaintext := payload
-	if size%aes.BlockSize != 0 {
-		plaintext = make([]byte, size+(aes.BlockSize-(size%aes.BlockSize)))
-		copy(plaintext, payload)
-	}
+	plaintext := make([]byte, newSize)
+	copy(plaintext, payload)
+	plaintext[size] = 0xff
 
 	aesCipher, err := aes.NewCipher(key)
 	if err != nil {
@@ -372,5 +376,27 @@ func decrypt(payload, key []byte) ([]byte, error) {
 	mode := cipher.NewCBCDecrypter(aesCipher, iv)
 	mode.CryptBlocks(plaintext, ciphertext)
 
-	return plaintext, nil
+	// Trim padding by looking for appended 0xff.
+	found := false
+	stop := 0
+	if len(plaintext) > aes.BlockSize {
+		stop = len(plaintext) - aes.BlockSize
+	}
+	payloadLength := 0
+	for i := len(plaintext) - 1; ; i-- {
+		if plaintext[i] == 0xff {
+			found = true
+			payloadLength = i
+			break
+		}
+		if i == stop {
+			break
+		}
+	}
+
+	if !found {
+		return nil, ErrDecryptInvalid
+	}
+
+	return plaintext[:payloadLength], nil
 }

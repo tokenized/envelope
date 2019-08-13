@@ -30,8 +30,6 @@ make
 
 ## Project Structure
 
-- `cmd/envelope` - Command line interface
-- `internal` - Internal versioning system
-- `envelope.go` - Serialize and encryption functions
+- `golang` - Go language implementation.
 
 ## Usage

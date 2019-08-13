@@ -1,9 +1,9 @@
-package version_0
+package v0
 
 import (
 	"bytes"
 
-	"github.com/tokenized/envelope/internal/version_0/protobuf"
+	"github.com/tokenized/envelope/src/golang/internal/v0/protobuf"
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
 
 	"github.com/golang/protobuf/proto"

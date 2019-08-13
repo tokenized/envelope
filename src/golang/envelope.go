@@ -4,12 +4,24 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/tokenized/envelope/internal/version_0"
-	"github.com/tokenized/envelope/internal/version_0/protobuf"
+	"github.com/tokenized/envelope/src/golang/internal/v0"
+	"github.com/tokenized/envelope/src/golang/internal/v0/protobuf"
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
 	"github.com/tokenized/smart-contract/pkg/wire"
 
 	"github.com/pkg/errors"
+)
+
+var (
+	ErrNotEnvelope = errors.New("Not an envelope")
+
+	envelopeVersion = uint8(0) // Current Envelope Protocol Version
+	baseHeader      = []byte{
+		bitcoin.OP_FALSE,  // Unspendable
+		bitcoin.OP_RETURN, // OP_RETURN
+		2,                 // Push two bytes
+		0xbd,              // Envelope Protocol ID
+		envelopeVersion}   // Envelope Protocol Version
 )
 
 type Message struct {
@@ -23,17 +35,21 @@ type Message struct {
 	Payload           []byte
 }
 
-var (
-	ErrNotEnvelope = errors.New("Not an envelope")
+type MetaNet interface {
+	Index() uint32
+	PublicKey(tx *wire.MsgTx) (bitcoin.PublicKey, error)
+	Parent() []byte
+}
 
-	envelopeVersion = uint8(0) // Current Envelope Protocol Version
-	header          = []byte{
-		bitcoin.OP_FALSE,  // Unspendable
-		bitcoin.OP_RETURN, // OP_RETURN
-		2,                 // Push two bytes
-		0xbd,              // Envelope Protocol ID
-		envelopeVersion}   // Envelope Protocol Version
-)
+type EncryptedPayload interface {
+	// SenderDecrypt decrypts the payload using the sender's private key and a receivers public key.
+	// receiverKey can be nil when no receivers are included in the payload.
+	SenderDecrypt(tx *wire.MsgTx, senderKey bitcoin.Key, receiverKey bitcoin.PublicKey) ([]byte, error)
+
+	// ReceiverDecrypt decrypts the payload using the receiver's private key and the sender's public
+	//   key from the tx input.
+	ReceiverDecrypt(tx *wire.MsgTx, receiverKey bitcoin.Key) ([]byte, error)
+}
 
 // NewMessage creates a message.
 func NewMessage(protocol []byte, version uint64, payload []byte) *Message {
@@ -53,35 +69,17 @@ func (m *Message) AddIdentifier(i []byte) {
 	m.Identifier = i
 }
 
-/******************************************** MetaNet *********************************************/
-type MetaNet interface {
-	Index() uint32
-	PublicKey(tx *wire.MsgTx) (bitcoin.PublicKey, error)
-	Parent() []byte
-}
-
 // AddMetaNet adds MetaNet data to the message.
 // index is the input index that will contain the public key. Note, it will not contain the public
 //   key when this function is called because it has not yet been signed. The public key will be in
 //   the signature script after the input has been signed. The input must be P2PKH or P2RPH.
 // If there is not parent then just use nil for parent.
 func (m *Message) AddMetaNet(index uint32, publicKey bitcoin.PublicKey, parent []byte) {
-	m.metaNet = version_0.NewMetaNet(index, publicKey, parent)
+	m.metaNet = v0.NewMetaNet(index, publicKey, parent)
 }
 
 func (m *Message) GetMetaNet() MetaNet {
 	return m.metaNet
-}
-
-/******************************************* Encryption *******************************************/
-type EncryptedPayload interface {
-	// SenderDecrypt decrypts the payload using the sender's private key and a receivers public key.
-	// receiverKey can be nil when no receivers are included in the payload.
-	SenderDecrypt(tx *wire.MsgTx, senderKey bitcoin.Key, receiverKey bitcoin.PublicKey) ([]byte, error)
-
-	// ReceiverDecrypt decrypts the payload using the receiver's private key and the sender's public
-	//   key from the tx input.
-	ReceiverDecrypt(tx *wire.MsgTx, receiverKey bitcoin.Key) ([]byte, error)
 }
 
 // NewEncryptedPayload creates an encrypted payload object.
@@ -102,7 +100,7 @@ type EncryptedPayload interface {
 //     with the derived shared secret of each receiver and included in the message.
 func (m *Message) AddEncryptedPayload(payload []byte, tx *wire.MsgTx, senderIndex uint32,
 	sender bitcoin.Key, receivers []bitcoin.PublicKey) error {
-	encryptedPayload, err := version_0.NewEncryptedPayload(payload, tx, senderIndex, sender,
+	encryptedPayload, err := v0.NewEncryptedPayload(payload, tx, senderIndex, sender,
 		receivers)
 	if err != nil {
 		return err
@@ -118,7 +116,7 @@ func (m *Message) GetEncryptedPayloads() []EncryptedPayload {
 // Serialize creates an OP_RETURN script in the "envelope" format containing the specified data.
 func (m *Message) Serialize(buf *bytes.Buffer) error {
 	// Header OP_FALSE, OP_RETURN, Envelope Protocol, Protocol
-	_, err := buf.Write(header)
+	_, err := buf.Write(baseHeader)
 	if err != nil {
 		return errors.Wrap(err, "Failed to write header")
 	}
@@ -140,42 +138,42 @@ func (m *Message) Serialize(buf *bytes.Buffer) error {
 	}
 
 	// MetaNet
-	var metaNet *version_0.MetaNet
+	var metaNet *v0.MetaNet
 	if m.metaNet != nil {
 		var ok bool
-		metaNet, ok = m.metaNet.(*version_0.MetaNet)
+		metaNet, ok = m.metaNet.(*v0.MetaNet)
 		if !ok {
 			return errors.New("MetaNet is not current version")
 		}
 	}
 
 	// Encrypted Payloads
-	privatePayloads := make([]*version_0.EncryptedPayload, 0, len(m.encryptedPayloads))
+	privatePayloads := make([]*v0.EncryptedPayload, 0, len(m.encryptedPayloads))
 	for _, privatePayload := range m.encryptedPayloads {
-		encryptedPayload, ok := privatePayload.(*version_0.EncryptedPayload)
+		encryptedPayload, ok := privatePayload.(*v0.EncryptedPayload)
 		if !ok {
 			return errors.New("Not all encrypted payloads of current version")
 		}
 		privatePayloads = append(privatePayloads, encryptedPayload)
 	}
 
-	return version_0.Serialize(buf, &envelope, metaNet, privatePayloads, m.Payload)
+	return v0.Serialize(buf, &envelope, metaNet, privatePayloads, m.Payload)
 }
 
 // Deserialize reads the Message from an OP_RETURN script.
 func Deserialize(buf *bytes.Reader) (*Message, error) {
 	// Header
-	if buf.Len() < len(header) {
+	if buf.Len() < len(baseHeader) {
 		return nil, ErrNotEnvelope
 	}
 
-	headerCheck := make([]byte, len(header)-1)
+	headerCheck := make([]byte, len(baseHeader)-1)
 	_, err := buf.Read(headerCheck)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to read script header")
 	}
 
-	if !bytes.Equal(header[:len(header)-1], headerCheck) {
+	if !bytes.Equal(baseHeader[:len(baseHeader)-1], headerCheck) {
 		return nil, ErrNotEnvelope
 	}
 
@@ -199,9 +197,9 @@ func Deserialize(buf *bytes.Reader) (*Message, error) {
 
 	switch result.envelopeVersion {
 	case 0:
-		var encryptedPayloads []*version_0.EncryptedPayload
+		var encryptedPayloads []*v0.EncryptedPayload
 		result.Version, result.PayloadType, result.Identifier, result.metaNet, encryptedPayloads,
-			result.Payload, err = version_0.Deserialize(buf)
+			result.Payload, err = v0.Deserialize(buf)
 		if err != nil {
 			return nil, err
 		}
