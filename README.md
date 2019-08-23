@@ -81,6 +81,8 @@ The envelope system supports encrypting data using several key derivation method
 * Single Recipient - Encryption key is derived from sender and recipient keys. One of those private keys and the other public key is required to derive the encryption key.
 * Multiple Recipients - Encryption Key is random and encrypted within the message for each recipient. Any recipient with the sender's public key and their private key can derive an encryption key and use that to decrypt the message's encryption key.
 
+There is an example of an on chain encrypted file [below](#private-file).
+
 ## Usage
 
 The `envelope` package provides a common interface to all versions of the protocol. Creating messages and the more advanced features, like MetaNet and Encryption, require directly using the version specific packages like `v0`.
@@ -185,7 +187,7 @@ outputScript := buf.Bytes()
 tx.AddTxOut(wire.NewTxOut(0, outputScript))
 ```
 
-
+<a name="private-file"></a>
 #### Private File
 ```
 privatePayload, err := ioutil.ReadFile("TermsOfSale.pdf")
