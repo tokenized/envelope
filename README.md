@@ -232,4 +232,4 @@ tx.AddTxOut(wire.NewTxOut(0, outputScript))
 
 # License
 
-The Tokenized Envelope System is open-sourced software licensed under the [OPEN BITCOIN SV LICENSE](LICENSE.md) license.
+The Tokenized Envelope System is open-sourced software licensed under the [OPEN BITCOIN SV](LICENSE.md) license.
