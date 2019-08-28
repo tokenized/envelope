@@ -8,10 +8,6 @@ It supports 3 encryption scenarios through the use of Bitcoin private and public
 - Encrypting data to be shared with one recipient.
 - Encrypting data to be shared with multiple recipients.
 
-### License
-
-Copyright 2019 Tokenized Group Pty Ltd.
-
 ## Getting Started
 
 #### First, clone the GitHub repo.
@@ -233,3 +229,7 @@ outputScript := buf.Bytes()
 // Put output script in Bitcoin Tx Output.
 tx.AddTxOut(wire.NewTxOut(0, outputScript))
 ```
+
+# License
+
+The Tokenized Envelope System is open-sourced software licensed under the [OPEN BITCOIN SV LICENSE](LICENSE.md) license.
