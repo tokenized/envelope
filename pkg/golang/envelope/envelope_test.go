@@ -441,8 +441,12 @@ func addFakeOutput(tx *wire.MsgTx, key bitcoin.Key) error {
 	if err != nil {
 		return err
 	}
+	script, err := address.LockingScript()
+	if err != nil {
+		return err
+	}
 	tx.TxOut = append(tx.TxOut, &wire.TxOut{
-		PkScript: address.LockingScript(),
+		PkScript: script,
 		Value:    100,
 	})
 	return nil
