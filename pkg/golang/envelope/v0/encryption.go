@@ -61,11 +61,11 @@ func NewEncryptedPayload(payload []byte, tx *wire.MsgTx, senderIndex uint32, sen
 			if err != nil {
 				continue
 			}
-			pkhAddress, ok := rawAddress.(*bitcoin.RawAddressPKH)
-			if !ok {
+			if rawAddress.Type() != bitcoin.ScriptTypePKH {
 				continue
 			}
-			if bytes.Equal(pkh, pkhAddress.PKH()) {
+			hash, _ := rawAddress.Hash()
+			if bytes.Equal(pkh, hash.Bytes()) {
 				found = true
 				receiverIndex = uint32(index)
 				break
@@ -103,11 +103,11 @@ func NewEncryptedPayload(payload []byte, tx *wire.MsgTx, senderIndex uint32, sen
 				if err != nil {
 					continue
 				}
-				pkhAddress, ok := rawAddress.(*bitcoin.RawAddressPKH)
-				if !ok {
+				if rawAddress.Type() != bitcoin.ScriptTypePKH {
 					continue
 				}
-				if bytes.Equal(pkh, pkhAddress.PKH()) {
+				hash, _ := rawAddress.Hash()
+				if bytes.Equal(pkh, hash.Bytes()) {
 					found = true
 					receiverIndex = uint32(index)
 					break
@@ -187,12 +187,12 @@ func (ep *EncryptedPayload) SenderDecrypt(tx *wire.MsgTx, senderKey bitcoin.Key,
 			continue
 		}
 
-		pkhAddress, ok := rawAddress.(*bitcoin.RawAddressPKH)
-		if !ok {
+		if rawAddress.Type() != bitcoin.ScriptTypePKH {
 			continue
 		}
 
-		if bytes.Equal(pkh, pkhAddress.PKH()) {
+		hash, _ := rawAddress.Hash()
+		if bytes.Equal(pkh, hash.Bytes()) {
 			if len(receiver.encryptedKey) == 0 {
 				if len(ep.receivers) != 1 {
 					// For more than one receiver, an encrypted key must be provided.
@@ -261,12 +261,12 @@ func (ep *EncryptedPayload) ReceiverDecrypt(tx *wire.MsgTx, receiverKey bitcoin.
 			continue
 		}
 
-		pkhAddress, ok := rawAddress.(*bitcoin.RawAddressPKH)
-		if !ok {
+		if rawAddress.Type() != bitcoin.ScriptTypePKH {
 			continue
 		}
-
-		if bytes.Equal(pkh, pkhAddress.PKH()) {
+		
+		hash, _ := rawAddress.Hash()
+		if bytes.Equal(pkh, hash.Bytes()) {
 			if len(receiver.encryptedKey) == 0 {
 				if len(ep.receivers) != 1 {
 					// For more than one receiver, an encrypted key must be provided.

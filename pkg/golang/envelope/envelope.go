@@ -37,14 +37,27 @@ func Deserialize(buf *bytes.Reader) (BaseMessage, error) {
 		return nil, ErrNotEnvelope
 	}
 
-	var opReturn [2]byte
-	_, err := buf.Read(opReturn[:])
+	var b byte
+	var err error
+
+	b, err = buf.ReadByte()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to read op return")
 	}
 
-	if opReturn[0] != bitcoin.OP_FALSE || opReturn[1] != bitcoin.OP_RETURN {
-		return nil, ErrNotEnvelope
+	if b != bitcoin.OP_RETURN {
+		if b != bitcoin.OP_FALSE {
+			return nil, ErrNotEnvelope
+		}
+
+		b, err = buf.ReadByte()
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to read op return")
+		}
+
+		if b != bitcoin.OP_RETURN {
+			return nil, ErrNotEnvelope
+		}
 	}
 
 	// Envelope Protocol ID
