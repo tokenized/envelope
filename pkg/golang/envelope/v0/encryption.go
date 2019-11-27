@@ -158,7 +158,7 @@ func (ep *EncryptedPayload) SenderDecrypt(tx *wire.MsgTx, senderKey bitcoin.Key,
 		return nil, err
 	}
 
-	senderPubKey, err := bitcoin.DecodePublicKeyBytes(senderPubKeyData)
+	senderPubKey, err := bitcoin.PublicKeyFromBytes(senderPubKeyData)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (ep *EncryptedPayload) SenderDecrypt(tx *wire.MsgTx, senderKey bitcoin.Key,
 		return decrypt(ep.payload, bitcoin.Sha256(senderKey.Number()))
 	}
 
-	if receiverPubKey == nil {
+	if receiverPubKey.IsEmpty() {
 		return nil, errors.New("Receiver public key required")
 	}
 
@@ -244,7 +244,7 @@ func (ep *EncryptedPayload) ReceiverDecrypt(tx *wire.MsgTx, receiverKey bitcoin.
 		return nil, err
 	}
 
-	senderPubKey, err := bitcoin.DecodePublicKeyBytes(senderPubKeyData)
+	senderPubKey, err := bitcoin.PublicKeyFromBytes(senderPubKeyData)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (ep *EncryptedPayload) ReceiverDecrypt(tx *wire.MsgTx, receiverKey bitcoin.
 		if rawAddress.Type() != bitcoin.ScriptTypePKH {
 			continue
 		}
-		
+
 		hash, _ := rawAddress.Hash()
 		if bytes.Equal(pkh, hash.Bytes()) {
 			if len(receiver.encryptedKey) == 0 {

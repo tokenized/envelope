@@ -26,22 +26,22 @@ func (mn *MetaNet) Index() uint32 {
 }
 
 func (mn *MetaNet) PublicKey(tx *wire.MsgTx) (bitcoin.PublicKey, error) {
-	if mn.publicKey != nil {
+	if mn.publicKey.IsEmpty() {
 		return mn.publicKey, nil
 	}
 
 	if int(mn.index) >= len(tx.TxIn) {
-		return nil, errors.New("Index out of range")
+		return bitcoin.PublicKey{}, errors.New("Index out of range")
 	}
 
 	pubKey, err := bitcoin.PublicKeyFromUnlockingScript(tx.TxIn[mn.index].SignatureScript)
 	if err != nil {
-		return nil, err
+		return bitcoin.PublicKey{}, err
 	}
 
-	mn.publicKey, err = bitcoin.DecodePublicKeyBytes(pubKey)
+	mn.publicKey, err = bitcoin.PublicKeyFromBytes(pubKey)
 	if err != nil {
-		return nil, err
+		return bitcoin.PublicKey{}, err
 	}
 
 	return mn.publicKey, nil
