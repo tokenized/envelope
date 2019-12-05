@@ -161,7 +161,7 @@ var encryptionTests = []struct {
 func TestEncryptionNoReceiver(t *testing.T) {
 	for i, test := range encryptionTests {
 		message := v0.NewMessage(test.protocol, test.version, test.payload)
-		sender, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
+		sender, err := bitcoin.GenerateKey(bitcoin.TestNet)
 
 		var fakeScriptBuf bytes.Buffer
 		err = bitcoin.WritePushDataScript(&fakeScriptBuf, sender.PublicKey().Bytes())
@@ -204,7 +204,7 @@ func TestEncryptionNoReceiver(t *testing.T) {
 		}
 
 		encryptedPayload := read.EncryptedPayload(0)
-		encPayload, err := encryptedPayload.SenderDecrypt(tx, sender, nil)
+		encPayload, err := encryptedPayload.SenderDecrypt(tx, sender, bitcoin.PublicKey{})
 		if err != nil {
 			t.Fatalf("Test %d failed decrypt : %s", i, err)
 		}
@@ -219,8 +219,8 @@ func TestEncryptionNoReceiver(t *testing.T) {
 func TestEncryptionSingleReceiver(t *testing.T) {
 	for i, test := range encryptionTests {
 		message := v0.NewMessage(test.protocol, test.version, test.payload)
-		sender, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
-		receiver, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
+		sender, err := bitcoin.GenerateKey(bitcoin.TestNet)
+		receiver, err := bitcoin.GenerateKey(bitcoin.TestNet)
 
 		tx := wire.NewMsgTx(2)
 		if err = addFakeInput(tx, sender); err != nil {
@@ -272,9 +272,9 @@ func TestEncryptionSingleReceiver(t *testing.T) {
 func TestEncryptionMultiReceiver(t *testing.T) {
 	for i, test := range encryptionTests {
 		message := v0.NewMessage(test.protocol, test.version, test.payload)
-		sender, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
-		receiver1, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
-		receiver2, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
+		sender, err := bitcoin.GenerateKey(bitcoin.TestNet)
+		receiver1, err := bitcoin.GenerateKey(bitcoin.TestNet)
+		receiver2, err := bitcoin.GenerateKey(bitcoin.TestNet)
 
 		tx := wire.NewMsgTx(2)
 		if err = addFakeInput(tx, sender); err != nil {
@@ -343,9 +343,9 @@ func TestEncryptionProtobuf(t *testing.T) {
 	}
 
 	message := v0.NewMessage([]byte("test"), 0, payload)
-	sender, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
-	receiver1, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
-	receiver2, err := bitcoin.GenerateKeyS256(bitcoin.TestNet)
+	sender, err := bitcoin.GenerateKey(bitcoin.TestNet)
+	receiver1, err := bitcoin.GenerateKey(bitcoin.TestNet)
+	receiver2, err := bitcoin.GenerateKey(bitcoin.TestNet)
 
 	tx := wire.NewMsgTx(2)
 	if err = addFakeInput(tx, sender); err != nil {
