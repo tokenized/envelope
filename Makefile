@@ -1,6 +1,6 @@
 
 
-all: tools dep test dist
+all: tools dep test
 
 dep:
 	go get ./...
