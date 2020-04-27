@@ -2,16 +2,12 @@ package v0
 
 import (
 	"bytes"
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"errors"
-	"math/big"
+	"fmt"
 
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
 	"github.com/tokenized/smart-contract/pkg/wire"
-
-	"github.com/btcsuite/btcd/btcec"
 )
 
 var (
@@ -41,6 +37,39 @@ type EncryptedPayload struct {
 type Receiver struct {
 	index        uint32
 	encryptedKey []byte
+}
+
+func (ep *EncryptedPayload) SenderPublicKey(tx *wire.MsgTx) (bitcoin.PublicKey, error) {
+	if int(ep.sender) >= len(tx.TxIn) {
+		return bitcoin.PublicKey{}, fmt.Errorf("Sender index out of range : %d/%d", ep.sender,
+			len(tx.TxIn))
+	}
+
+	spk, err := bitcoin.PublicKeyFromUnlockingScript(tx.TxIn[ep.sender].SignatureScript)
+	if err != nil {
+		return bitcoin.PublicKey{}, err
+	}
+
+	return bitcoin.PublicKeyFromBytes(spk)
+}
+
+func (ep *EncryptedPayload) ReceiverAddresses(tx *wire.MsgTx) ([]bitcoin.RawAddress, error) {
+	result := make([]bitcoin.RawAddress, 0, len(ep.receivers))
+	for _, receiver := range ep.receivers {
+		if int(receiver.index) >= len(tx.TxOut) {
+			return nil, fmt.Errorf("Receiver index out of range : %d/%d", receiver.index,
+				len(tx.TxOut))
+		}
+
+		ra, err := bitcoin.RawAddressFromLockingScript(tx.TxOut[receiver.index].PkScript)
+		if err != nil {
+			continue
+		}
+
+		result = append(result, ra)
+	}
+
+	return result, nil
 }
 
 func NewEncryptedPayload(payload []byte, tx *wire.MsgTx, senderIndex uint32, sender bitcoin.Key,
@@ -79,7 +108,7 @@ func NewEncryptedPayload(payload []byte, tx *wire.MsgTx, senderIndex uint32, sen
 		}
 
 		// Encryption key is derived using ECDH with sender's private key and receiver's public key.
-		secret, err := ecdhSecret(sender, receivers[0])
+		secret, err := bitcoin.ECDHSecret(sender, receivers[0])
 		if err != nil {
 			return nil, err
 		}
@@ -117,13 +146,13 @@ func NewEncryptedPayload(payload []byte, tx *wire.MsgTx, senderIndex uint32, sen
 				return nil, errors.New("Receiver output not found")
 			}
 
-			receiverSecret, err := ecdhSecret(sender, receiver)
+			receiverSecret, err := bitcoin.ECDHSecret(sender, receiver)
 			if err != nil {
 				return nil, err
 			}
 			receiverKey := bitcoin.Sha256(receiverSecret)
 
-			encryptedKey, err := encrypt(encryptionKey, receiverKey)
+			encryptedKey, err := bitcoin.Encrypt(encryptionKey, receiverKey)
 			if err != nil {
 				return nil, err
 			}
@@ -136,7 +165,7 @@ func NewEncryptedPayload(payload []byte, tx *wire.MsgTx, senderIndex uint32, sen
 	}
 
 	var err error
-	result.payload, err = encrypt(payload, encryptionKey)
+	result.payload, err = bitcoin.Encrypt(payload, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +197,7 @@ func (ep *EncryptedPayload) SenderDecrypt(tx *wire.MsgTx, senderKey bitcoin.Key,
 	}
 
 	if len(ep.receivers) == 0 {
-		return decrypt(ep.payload, bitcoin.Sha256(senderKey.Number()))
+		return bitcoin.Decrypt(ep.payload, bitcoin.Sha256(senderKey.Number()))
 	}
 
 	if receiverPubKey.IsEmpty() {
@@ -200,27 +229,27 @@ func (ep *EncryptedPayload) SenderDecrypt(tx *wire.MsgTx, senderKey bitcoin.Key,
 				}
 
 				// Use DH secret
-				secret, err := ecdhSecret(senderKey, receiverPubKey)
+				secret, err := bitcoin.ECDHSecret(senderKey, receiverPubKey)
 				if err != nil {
 					return nil, err
 				}
 				encryptionKey := bitcoin.Sha256(secret)
 
-				return decrypt(ep.payload, encryptionKey)
+				return bitcoin.Decrypt(ep.payload, encryptionKey)
 			} else {
 				// Decrypt key using DH key
-				secret, err := ecdhSecret(senderKey, receiverPubKey)
+				secret, err := bitcoin.ECDHSecret(senderKey, receiverPubKey)
 				if err != nil {
 					return nil, err
 				}
 				dhKey := bitcoin.Sha256(secret)
 
-				encryptionKey, err := decrypt(receiver.encryptedKey, dhKey)
+				encryptionKey, err := bitcoin.Decrypt(receiver.encryptedKey, dhKey)
 				if err != nil {
 					return nil, err
 				}
 
-				return decrypt(ep.payload, encryptionKey)
+				return bitcoin.Decrypt(ep.payload, encryptionKey)
 			}
 		}
 	}
@@ -250,7 +279,8 @@ func (ep *EncryptedPayload) ReceiverDecrypt(tx *wire.MsgTx, receiverKey bitcoin.
 	}
 
 	// Find receiver
-	pkh := bitcoin.Hash160(receiverKey.PublicKey().Bytes())
+	pk := receiverKey.PublicKey()
+	pkh := bitcoin.Hash160(pk.Bytes())
 	for _, receiver := range ep.receivers {
 		if receiver.index >= uint32(len(tx.TxOut)) {
 			continue
@@ -261,140 +291,48 @@ func (ep *EncryptedPayload) ReceiverDecrypt(tx *wire.MsgTx, receiverKey bitcoin.
 			continue
 		}
 
-		if rawAddress.Type() != bitcoin.ScriptTypePKH {
+		if rawAddress.Type() == bitcoin.ScriptTypePKH {
+			hash, err := rawAddress.Hash()
+			if err != nil || !bytes.Equal(pkh, hash.Bytes()) {
+				continue
+			}
+		}
+
+		key, err := rawAddress.GetPublicKey()
+		if err != nil || !key.Equal(pk) {
 			continue
 		}
 
-		hash, _ := rawAddress.Hash()
-		if bytes.Equal(pkh, hash.Bytes()) {
-			if len(receiver.encryptedKey) == 0 {
-				if len(ep.receivers) != 1 {
-					// For more than one receiver, an encrypted key must be provided.
-					return nil, errors.New("Missing encryption key for receiver")
-				}
-
-				// Use DH secret
-				secret, err := ecdhSecret(receiverKey, senderPubKey)
-				if err != nil {
-					return nil, err
-				}
-				encryptionKey := bitcoin.Sha256(secret)
-
-				return decrypt(ep.payload, encryptionKey)
-			} else {
-				// Decrypt key using DH key
-				secret, err := ecdhSecret(receiverKey, senderPubKey)
-				if err != nil {
-					return nil, err
-				}
-				dhKey := bitcoin.Sha256(secret)
-
-				encryptionKey, err := decrypt(receiver.encryptedKey, dhKey)
-				if err != nil {
-					return nil, err
-				}
-
-				return decrypt(ep.payload, encryptionKey)
+		if len(receiver.encryptedKey) == 0 {
+			if len(ep.receivers) != 1 {
+				// For more than one receiver, an encrypted key must be provided.
+				return nil, errors.New("Missing encryption key for receiver")
 			}
+
+			// Use DH secret
+			secret, err := bitcoin.ECDHSecret(receiverKey, senderPubKey)
+			if err != nil {
+				return nil, err
+			}
+			encryptionKey := bitcoin.Sha256(secret)
+
+			return bitcoin.Decrypt(ep.payload, encryptionKey)
+		} else {
+			// Decrypt key using DH key
+			secret, err := bitcoin.ECDHSecret(receiverKey, senderPubKey)
+			if err != nil {
+				return nil, err
+			}
+			dhKey := bitcoin.Sha256(secret)
+
+			encryptionKey, err := bitcoin.Decrypt(receiver.encryptedKey, dhKey)
+			if err != nil {
+				return nil, err
+			}
+
+			return bitcoin.Decrypt(ep.payload, encryptionKey)
 		}
 	}
 
 	return nil, errors.New("Matching receiver not found")
-}
-
-// ecdhSecret returns the secret derived using ECDH (Elliptic Curve Diffie Hellman).
-func ecdhSecret(k bitcoin.Key, pub bitcoin.PublicKey) ([]byte, error) {
-	var x, y big.Int
-	pubX, pubY := pub.Numbers()
-	x.SetBytes(pubX)
-	y.SetBytes(pubY)
-
-	sx, _ := btcec.S256().ScalarMult(&x, &y, k.Number()) // DH is just k * pub
-	return sx.Bytes(), nil
-}
-
-// encrypt generates a random IV prepends it to the output, then uses AES with the input keysize and
-//   CBC to encrypt the payload.
-func encrypt(payload, key []byte) ([]byte, error) {
-	// Append 0xff to end of payload so padding, for block alignment, can be removed.
-	size := len(payload)
-	newSize := size + 1
-	if newSize%aes.BlockSize != 0 {
-		newSize = newSize + (aes.BlockSize - (newSize % aes.BlockSize))
-	}
-	plaintext := make([]byte, newSize)
-	copy(plaintext, payload)
-	plaintext[size] = 0xff
-
-	aesCipher, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
-	_, err = rand.Read(ciphertext[:aes.BlockSize]) // IV
-	if err != nil {
-		return nil, err
-	}
-
-	mode := cipher.NewCBCEncrypter(aesCipher, ciphertext[:aes.BlockSize])
-	mode.CryptBlocks(ciphertext[aes.BlockSize:], plaintext)
-
-	// TODO Append plaintext hash
-
-	return ciphertext, nil
-}
-
-// decrypt reads the IV from the beginning of the output, then uses AES with the input keysize and
-//   CBC to decrypt the payload.
-func decrypt(payload, key []byte) ([]byte, error) {
-	size := len(payload)
-	if size == 0 {
-		return nil, nil
-	}
-	if size <= aes.BlockSize {
-		return nil, errors.New("Payload too short for decrypt")
-	}
-
-	if len(payload)%aes.BlockSize != 0 {
-		return nil, errors.New("Payload size doesn't align with decrypt block size")
-	}
-
-	// TODO Check plaintext hash
-
-	aesCipher, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	iv := payload[:aes.BlockSize]
-	ciphertext := payload[aes.BlockSize:]
-	plaintext := make([]byte, len(ciphertext))
-
-	mode := cipher.NewCBCDecrypter(aesCipher, iv)
-	mode.CryptBlocks(plaintext, ciphertext)
-
-	// Trim padding by looking for appended 0xff.
-	found := false
-	stop := 0
-	if len(plaintext) > aes.BlockSize {
-		stop = len(plaintext) - aes.BlockSize
-	}
-	payloadLength := 0
-	for i := len(plaintext) - 1; ; i-- {
-		if plaintext[i] == 0xff {
-			found = true
-			payloadLength = i
-			break
-		}
-		if i == stop {
-			break
-		}
-	}
-
-	if !found {
-		return nil, ErrDecryptInvalid
-	}
-
-	return plaintext[:payloadLength], nil
 }
