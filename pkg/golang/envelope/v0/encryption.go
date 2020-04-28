@@ -82,7 +82,7 @@ func NewEncryptedPayload(payload []byte, tx *wire.MsgTx, senderIndex uint32, sen
 		encryptionKey = bitcoin.Sha256(sender.Number())
 	} else if len(receivers) == 1 { // One receiver
 		// Find receiver's output
-		pkh := bitcoin.Hash160(receivers[0].Bytes())
+		pkh, _ := bitcoin.NewHash20(bitcoin.Hash160(receivers[0].Bytes()))
 		receiverIndex := uint32(0)
 		found := false
 		for index, output := range tx.TxOut {
@@ -90,11 +90,16 @@ func NewEncryptedPayload(payload []byte, tx *wire.MsgTx, senderIndex uint32, sen
 			if err != nil {
 				continue
 			}
-			if rawAddress.Type() != bitcoin.ScriptTypePKH {
-				continue
+
+			hash, err := rawAddress.GetPublicKeyHash()
+			if err == nil && hash.Equal(pkh) {
+				found = true
+				receiverIndex = uint32(index)
+				break
 			}
-			hash, _ := rawAddress.Hash()
-			if bytes.Equal(pkh, hash.Bytes()) {
+
+			key, err := rawAddress.GetPublicKey()
+			if err == nil && key.Equal(receivers[0]) {
 				found = true
 				receiverIndex = uint32(index)
 				break
@@ -124,7 +129,7 @@ func NewEncryptedPayload(payload []byte, tx *wire.MsgTx, senderIndex uint32, sen
 
 		// Find each receiver's output and encrypt key using their DH secret.
 		for _, receiver := range receivers {
-			pkh := bitcoin.Hash160(receiver.Bytes())
+			pkh, _ := bitcoin.NewHash20(bitcoin.Hash160(receiver.Bytes()))
 			receiverIndex := uint32(0)
 			found := false
 			for index, output := range tx.TxOut {
@@ -132,11 +137,16 @@ func NewEncryptedPayload(payload []byte, tx *wire.MsgTx, senderIndex uint32, sen
 				if err != nil {
 					continue
 				}
-				if rawAddress.Type() != bitcoin.ScriptTypePKH {
-					continue
+
+				hash, err := rawAddress.GetPublicKeyHash()
+				if err == nil && hash.Equal(pkh) {
+					found = true
+					receiverIndex = uint32(index)
+					break
 				}
-				hash, _ := rawAddress.Hash()
-				if bytes.Equal(pkh, hash.Bytes()) {
+
+				key, err := rawAddress.GetPublicKey()
+				if err == nil && key.Equal(receivers[0]) {
 					found = true
 					receiverIndex = uint32(index)
 					break
@@ -205,7 +215,7 @@ func (ep *EncryptedPayload) SenderDecrypt(tx *wire.MsgTx, senderKey bitcoin.Key,
 	}
 
 	// Find receiver
-	pkh := bitcoin.Hash160(receiverPubKey.Bytes())
+	pkh, _ := bitcoin.NewHash20(bitcoin.Hash160(receiverPubKey.Bytes()))
 	for _, receiver := range ep.receivers {
 		if receiver.index >= uint32(len(tx.TxOut)) {
 			continue
@@ -216,41 +226,46 @@ func (ep *EncryptedPayload) SenderDecrypt(tx *wire.MsgTx, senderKey bitcoin.Key,
 			continue
 		}
 
-		if rawAddress.Type() != bitcoin.ScriptTypePKH {
+		hash, err := rawAddress.GetPublicKeyHash()
+		matches := err == nil && hash.Equal(pkh)
+
+		if !matches {
+			key, err := rawAddress.GetPublicKey()
+			matches = err == nil && key.Equal(receiverPubKey)
+		}
+
+		if !matches {
 			continue
 		}
 
-		hash, _ := rawAddress.Hash()
-		if bytes.Equal(pkh, hash.Bytes()) {
-			if len(receiver.encryptedKey) == 0 {
-				if len(ep.receivers) != 1 {
-					// For more than one receiver, an encrypted key must be provided.
-					return nil, errors.New("Missing encryption key for receiver")
-				}
-
-				// Use DH secret
-				secret, err := bitcoin.ECDHSecret(senderKey, receiverPubKey)
-				if err != nil {
-					return nil, err
-				}
-				encryptionKey := bitcoin.Sha256(secret)
-
-				return bitcoin.Decrypt(ep.payload, encryptionKey)
-			} else {
-				// Decrypt key using DH key
-				secret, err := bitcoin.ECDHSecret(senderKey, receiverPubKey)
-				if err != nil {
-					return nil, err
-				}
-				dhKey := bitcoin.Sha256(secret)
-
-				encryptionKey, err := bitcoin.Decrypt(receiver.encryptedKey, dhKey)
-				if err != nil {
-					return nil, err
-				}
-
-				return bitcoin.Decrypt(ep.payload, encryptionKey)
+		if len(receiver.encryptedKey) == 0 {
+			if len(ep.receivers) != 1 {
+				// For more than one receiver, an encrypted key must be provided.
+				return nil, errors.New("Missing encryption key for receiver")
 			}
+
+			// Use DH secret
+			secret, err := bitcoin.ECDHSecret(senderKey, receiverPubKey)
+			if err != nil {
+				return nil, err
+			}
+			encryptionKey := bitcoin.Sha256(secret)
+
+			return bitcoin.Decrypt(ep.payload, encryptionKey)
+		} else {
+			// Decrypt key using DH key
+			secret, err := bitcoin.ECDHSecret(senderKey, receiverPubKey)
+			if err != nil {
+				return nil, err
+			}
+			dhKey := bitcoin.Sha256(secret)
+
+			encryptionKey, err := bitcoin.Decrypt(receiver.encryptedKey, dhKey)
+			if err != nil {
+				return nil, err
+			}
+
+			return bitcoin.Decrypt(ep.payload, encryptionKey)
 		}
 	}
 
@@ -280,7 +295,7 @@ func (ep *EncryptedPayload) ReceiverDecrypt(tx *wire.MsgTx, receiverKey bitcoin.
 
 	// Find receiver
 	pk := receiverKey.PublicKey()
-	pkh := bitcoin.Hash160(pk.Bytes())
+	pkh, _ := bitcoin.NewHash20(bitcoin.Hash160(pk.Bytes()))
 	for _, receiver := range ep.receivers {
 		if receiver.index >= uint32(len(tx.TxOut)) {
 			continue
@@ -291,15 +306,15 @@ func (ep *EncryptedPayload) ReceiverDecrypt(tx *wire.MsgTx, receiverKey bitcoin.
 			continue
 		}
 
-		if rawAddress.Type() == bitcoin.ScriptTypePKH {
-			hash, err := rawAddress.Hash()
-			if err != nil || !bytes.Equal(pkh, hash.Bytes()) {
-				continue
-			}
+		hash, err := rawAddress.GetPublicKeyHash()
+		matches := err == nil && hash.Equal(pkh)
+
+		if !matches {
+			key, err := rawAddress.GetPublicKey()
+			matches = err == nil && key.Equal(pk)
 		}
 
-		key, err := rawAddress.GetPublicKey()
-		if err != nil || !key.Equal(pk) {
+		if !matches {
 			continue
 		}
 
