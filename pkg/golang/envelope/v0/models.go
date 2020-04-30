@@ -28,10 +28,16 @@ type Message struct {
 //   1 receiver  - data is encrypted with a derived shared secret.
 //   2 receivers - data is encrypted with a random private key and the private key is encrypted
 //     with the derived shared secret of each receiver and included in the message.
+//
+// EncryptionType:
+//   0 Direct - encryption secret based on public keys in transaction pointed to by sender and
+//       receivers.
+//   1 Indirect - encryption secret is from previous context.
 type EncryptedPayload struct {
-	sender    uint32
-	receivers []*Receiver
-	payload   []byte // Data that is to be or was encrypted
+	sender         uint32
+	receivers      []*Receiver
+	payload        []byte // Data that is to be or was encrypted
+	encryptionType uint32
 }
 
 // Index to receiver and if more than one, encrypted keys

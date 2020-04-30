@@ -14,6 +14,10 @@ var (
 	ErrDecryptInvalid = errors.New("Decrypt invalid")
 )
 
+func (ep *EncryptedPayload) EncryptionType() uint32 {
+	return ep.encryptionType
+}
+
 func (ep *EncryptedPayload) SenderPublicKey(tx *wire.MsgTx) (bitcoin.PublicKey, error) {
 	if int(ep.sender) >= len(tx.TxIn) {
 		return bitcoin.PublicKey{}, fmt.Errorf("Sender index out of range : %d/%d", ep.sender,
@@ -48,8 +52,8 @@ func (ep *EncryptedPayload) ReceiverAddresses(tx *wire.MsgTx) ([]bitcoin.RawAddr
 }
 
 // IndirectDecrypt decrypts the payload using the specified secret.
-func (ep *EncryptedPayload) IndirectDecrypt(tx *wire.MsgTx, secret []byte) ([]byte, error) {
-	return bitcoin.Decrypt(ep.payload, bitcoin.Sha256(secret))
+func (ep *EncryptedPayload) IndirectDecrypt(encryptionKey bitcoin.Hash32) ([]byte, error) {
+	return bitcoin.Decrypt(ep.payload, encryptionKey.Bytes())
 }
 
 // SenderDecrypt decrypts the payload using the sender's private key and a receiver's public key.
@@ -62,6 +66,10 @@ func (ep *EncryptedPayload) SenderDecrypt(tx *wire.MsgTx, senderKey bitcoin.Key,
 // SenderDecryptKey decrypts the payload using the sender's private key and a receiver's public key.
 func (ep *EncryptedPayload) SenderDecryptKey(tx *wire.MsgTx, senderKey bitcoin.Key,
 	receiverPubKey bitcoin.PublicKey) ([]byte, bitcoin.Hash32, error) {
+
+	if ep.encryptionType != 0 {
+		return nil, bitcoin.Hash32{}, errors.Wrap(ErrDecryptInvalid, "Indirect")
+	}
 
 	// Find sender
 	if ep.sender >= uint32(len(tx.TxIn)) {
@@ -163,6 +171,11 @@ func (ep *EncryptedPayload) ReceiverDecrypt(tx *wire.MsgTx, receiverKey bitcoin.
 // ReceiverDecryptKey decrypts the payload using the receiver's private key and returns the
 //   encryption key.
 func (ep *EncryptedPayload) ReceiverDecryptKey(tx *wire.MsgTx, receiverKey bitcoin.Key) ([]byte, bitcoin.Hash32, error) {
+
+	if ep.encryptionType != 0 {
+		return nil, bitcoin.Hash32{}, errors.Wrap(ErrDecryptInvalid, "Indirect")
+	}
+
 	if len(ep.receivers) == 0 {
 		return nil, bitcoin.Hash32{}, errors.New("No receivers")
 	}

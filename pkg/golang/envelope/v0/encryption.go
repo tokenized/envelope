@@ -138,7 +138,7 @@ func NewEncryptedPayloadDirect(payload []byte, tx *wire.MsgTx, senderIndex uint3
 //   key instead of with keys in the message.
 func NewEncryptedPayloadIndirect(payload []byte, tx *wire.MsgTx, key bitcoin.Hash32) (*EncryptedPayload, error) {
 
-	result := &EncryptedPayload{}
+	result := &EncryptedPayload{encryptionType: 1}
 
 	var err error
 	result.payload, err = bitcoin.Encrypt(payload, key.Bytes())
