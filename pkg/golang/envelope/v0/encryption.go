@@ -97,7 +97,7 @@ func NewEncryptedPayloadDirect(payload []byte, tx *wire.MsgTx, senderIndex uint3
 				}
 
 				key, err := rawAddress.GetPublicKey()
-				if err == nil && key.Equal(receivers[0]) {
+				if err == nil && key.Equal(receiver) {
 					found = true
 					receiverIndex = uint32(index)
 					break
