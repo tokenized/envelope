@@ -55,7 +55,10 @@ func (m *Message) Serialize(buf *bytes.Buffer) error {
 	// Convert to protobuf
 	envelope.EncryptedPayloads = make([]*protobuf.EncryptedPayload, 0, len(m.encryptedPayloads))
 	for _, encryptedPayload := range m.encryptedPayloads {
-		pbEncryptedPayload := protobuf.EncryptedPayload{Sender: encryptedPayload.sender}
+		pbEncryptedPayload := protobuf.EncryptedPayload{
+			Sender:         encryptedPayload.sender,
+			EncryptionType: encryptedPayload.encryptionType,
+		}
 
 		// Receivers
 		pbEncryptedPayload.Receivers = make([]*protobuf.Receiver, 0, len(encryptedPayload.receivers))
@@ -135,7 +138,9 @@ func Deserialize(buf *bytes.Reader) (*Message, error) {
 	pbEncryptedPayloads := envelope.GetEncryptedPayloads()
 	result.encryptedPayloads = make([]*EncryptedPayload, 0, len(pbEncryptedPayloads))
 	for _, pbEncryptedPayload := range pbEncryptedPayloads {
-		var encryptedPayload EncryptedPayload
+		encryptedPayload := EncryptedPayload{
+			encryptionType: pbEncryptedPayload.EncryptionType,
+		}
 
 		// Sender
 		encryptedPayload.sender = pbEncryptedPayload.GetSender()

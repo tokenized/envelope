@@ -52,7 +52,9 @@ Push data containing the identifier of the payload's protocol.
 `PUSH_OP Envelope Data`
 Push data containing [protobuf](https://developers.google.com/protocol-buffers/) encoded data containing payload protocol version, content type, and content identifier as well as MetaNet and encrypted payloads.
 
-If the main payload is protobuf encoded, then the encrypted payloads can also contain protobuf encoded data that can be appended to the payload before decoding with protobuf. This allows selected fields to be encrypted.
+The Protobuf message definitions are in [api/messages.proto](./api/messages.proto).
+
+If the main payload is protobuf encoded, then the encrypted payloads can also contain protobuf encoded data. Then after the encrypted payloads are decrypted they can be appended to the main payload before decoding with protobuf. This allows selected fields to be encrypted.
 
 `PUSH_OP Payload`
 The envelopes main payload.
@@ -71,13 +73,84 @@ message.SetMetaNet(indexOfInputThatWillContainPublicKey, publicKey, parentTxId)
 
 ## Encryption
 
-The envelope system supports encrypting data using several key derivation methods.
+The envelope system supports encrypting data using several key derivation methods. The encrypted data is contained in a list of `EncryptedPayload` fields in the "Envelope Data" `PUSH_OP`.
 
-* Private - Encryption key is derived from sender's private key. Only sender's private key can derive encryption key.
-* Single Recipient - Encryption key is derived from sender and recipient keys. One of those private keys and the other public key is required to derive the encryption key.
-* Multiple Recipients - Encryption Key is random and encrypted within the message for each recipient. Any recipient with the sender's public key and their private key can derive an encryption key and use that to decrypt the message's encryption key.
+Each `EncryptedPayload` entry contains:
+- `EncryptionType` - an integer currently 0 for direct and 1 for indirect.
+- `Sender` - an index referencing the input of the sender.
+- `Receivers` - a list of `Receiver` records containing information about the receiver.
+- `Payload` - the actual encrypted data.
 
-There is an example of an on chain encrypted file [below](#private-file).
+Each `Receiver` entry contains:
+- `Index` - an index referencing the output of the receiver.
+- `EncryptedKey` - the encrypted key if it is not the ECDH between the sender and receiver's keys.
+
+### Integrated Encryption Scheme (IES)
+
+Envelope uses its own integrated encryption scheme because it is designed to be embedded in a transaction on chain and linked to the keys and signatures of a transaction. Therefore it can be very simple as the actual encryption only has to worry about encrypting the data securely. Data integrity and authentication of sender and receiver are done with keys and signatures in the transaction.
+
+256 bit (32 byte) keys are used and a `0xff` byte is appended to the plain text before encryption so any padding due to the 128 bit (16 byte) block size can be removed after decryption.
+
+#### Encryption
+
+- Append a `0xff` byte to the end of the unencrypted data (plain text)
+- Encrypt using AES 256 bit keys with CBC (Cipher Block Chaining)
+- Prepend the IV to the encrypted data (cipher text)
+
+#### Decryption
+
+- Extract IV from the beginning of the encrypted data (cipher text)
+- Decrypt using AES 256 bit keys with CBC (Cipher Block Chaining)
+- Truncate all bytes from the end of the unencrypted data up to and including the `0xff` added during encryption
+
+### Direct Encryption
+
+The `EncryptionType` field of encrypted payload is 0.  The `Sender` and `Receivers` fields are used to derive the encryption key.
+
+Direct encryption is a method of encryption using an encryption key that can be derived from the public keys either in the transaction inputs and outputs or referenced by hashes in the inputs and outputs. The encryption key is derived using  and a private key for one of those public keys and at least one of those public keys
+
+#### Private
+
+The encryption key derived from sender's private key. Only the sender's private key can derive encryption key.
+
+```
+s = Sender's private key
+e = Encryption key
+
+e = SHA256(s)
+```
+
+#### Single Recipient
+
+The encryption key is derived from sender and recipient keys. ECDH (Elliptic Curve Diffie Hellman) and one of those private keys and the other public key is used to derive the encryption key.
+
+ECDH says that the sender's private key multiplied by the receiver's public key is equal to the sender's public key multiplied by the receiver's private key. Both parties can derive the same value with only their private key and the other's public key and no one else can without one of their private keys.
+
+```
+s = Sender's private key
+S = Sender's public key
+r = Receiver's private key
+R = Receiver's public key
+e = Encryption key
+
+# ECDH defines the following equation
+s * R = r * S
+
+# We hash it for extra safety
+e = SHA256(s * R) = SHA256(r * S)
+```
+
+There is an example implementation creating an on chain encrypted file [below](#private-file).
+
+#### Multiple Recipients
+
+The encryption key is random and encrypted within the message for each recipient. Any recipient with the sender's public key and their private key can derive an encryption key and use that to decrypt their encrypted copy of the message's encryption key.
+
+### Indirect Encryption
+
+The `EncryptionType` field of encrypted payload is 1. The `Sender` and `Receivers` fields are ignored.
+
+Indirect encryption is a method of encryption using an encryption key that is negotiated beforehand. For example, an encryption key can be shared offline, or in a previous transaction.
 
 ## Usage
 
@@ -148,9 +221,9 @@ outputScript := buf.Bytes()
 tx.AddTxOut(wire.NewTxOut(0, outputScript))
 ```
 
-### File System Usage
+### File System Example Usage
 
-Envelope can be used to store files on chain.
+Envelope can be used to store files on chain. Keep in mind this is just an example. The exact specifics of a file storage protocol should be defined and shared before being used. We also recommend that when encrypting a file the file name and type be included in the encrypted payload instead of the Envelope header fields.
 
 * The envelope `PayloadProtocol` is "F".
 * The envelope `PayloadIdentifier` specifies the name of the file.
@@ -185,6 +258,9 @@ tx.AddTxOut(wire.NewTxOut(0, outputScript))
 
 <a name="private-file"></a>
 #### Private File
+
+This shows a sample implementation to encrypt a PDF file in a bitcoin transaction. It uses "F" as the protocol identifier. This is just for example purposes and is not a defined protocol at this time. In this example the file name and mime type are put in the PayloadIdentifier and PayloadType header fields of the envelope and are therefore not encrypted. To include them in the encrypted data, the PayloadIdentifier and PayloadType fields can be left empty and a data format for the encrypted payload could be defined. It could include fields for filename, file type, and file data, as well as other fields deemed important. For example a private file protocol could be defined with the protocol identifier "P" and the payload would be a protobuf containing the fields "Name", "Type", and "Data".
+
 ```
 privatePayload, err := ioutil.ReadFile("TermsOfSale.pdf")
 if err != nil {
@@ -197,7 +273,7 @@ message.SetPayloadIdentifier("TermsOfSale.pdf")
 message.SetPayloadType("application/pdf")
 
 // Create Bitcoin transaction with sender and recipient.
-tx := wire.NewMsgTx(2)
+tx := wire.NewMsgTx(1)
 
 // Add input signed by sender.
 senderKey := ...
@@ -211,7 +287,8 @@ recipient := ...
 tx.AddTxOut(recipient)
 recipientIndex := 0
 
-// Message will be encrypted with a secret that only those with senderPrivate/recipientPublic or senderPublic/recipientPrivate will be able to derive.
+// Message will be encrypted with a secret that only those with senderPrivate/recipientPublic
+//   or senderPublic/recipientPrivate will be able to derive.
 err = message.AddEncryptedPayload(privatePayload, tx, senderIndex, senderKey,
     []bitcoin.PublicKey{recipientPublicKey})
 if err != nil {

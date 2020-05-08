@@ -9,6 +9,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	// Known Protocol Identifiers
+	ProtocolIDTokenized = "tokenized"
+	ProtocolIDTokenizedTest = "test.tokenized"
+	ProtocolIDFlag = "flag"
+)
+
 var (
 	ErrNotEnvelope    = errors.New("Not an envelope")
 	ErrUnknownVersion = errors.New("Unknown version")

@@ -68,7 +68,7 @@ proto.protobuf.Envelope.prototype.toObject = function(opt_includeInstance) {
  */
 proto.protobuf.Envelope.toObject = function(includeInstance, msg) {
   var f, obj = {
-    version: msg.getVersion(),
+    version: jspb.Message.getFieldWithDefault(msg, 1, 0),
     type: msg.getType_asB64(),
     identifier: msg.getIdentifier_asB64(),
     metanet: (f = msg.getMetanet()) && proto.protobuf.MetaNet.toObject(includeInstance, f),
@@ -130,8 +130,7 @@ proto.protobuf.Envelope.deserializeBinaryFromReader = function(msg, reader) {
     case 5:
       var value = new proto.protobuf.EncryptedPayload;
       reader.readMessage(value,proto.protobuf.EncryptedPayload.deserializeBinaryFromReader);
-      msg.getEncryptedpayloadsList().push(value);
-      msg.setEncryptedpayloadsList(msg.getEncryptedpayloadsList());
+      msg.addEncryptedpayloads(value);
       break;
     default:
       reader.skipField();
@@ -143,56 +142,46 @@ proto.protobuf.Envelope.deserializeBinaryFromReader = function(msg, reader) {
 
 
 /**
- * Class method variant: serializes the given message to binary data
- * (in protobuf wire format), writing to the given BinaryWriter.
- * @param {!proto.protobuf.Envelope} message
- * @param {!jspb.BinaryWriter} writer
- */
-proto.protobuf.Envelope.serializeBinaryToWriter = function(message, writer) {
-  message.serializeBinaryToWriter(writer);
-};
-
-
-/**
  * Serializes the message to binary data (in protobuf wire format).
  * @return {!Uint8Array}
  */
 proto.protobuf.Envelope.prototype.serializeBinary = function() {
   var writer = new jspb.BinaryWriter();
-  this.serializeBinaryToWriter(writer);
+  proto.protobuf.Envelope.serializeBinaryToWriter(this, writer);
   return writer.getResultBuffer();
 };
 
 
 /**
- * Serializes the message to binary data (in protobuf wire format),
- * writing to the given BinaryWriter.
+ * Serializes the given message to binary data (in protobuf wire
+ * format), writing to the given BinaryWriter.
+ * @param {!proto.protobuf.Envelope} message
  * @param {!jspb.BinaryWriter} writer
  */
-proto.protobuf.Envelope.prototype.serializeBinaryToWriter = function (writer) {
+proto.protobuf.Envelope.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = this.getVersion();
+  f = message.getVersion();
   if (f !== 0) {
     writer.writeUint64(
       1,
       f
     );
   }
-  f = this.getType_asU8();
+  f = message.getType_asU8();
   if (f.length > 0) {
     writer.writeBytes(
       2,
       f
     );
   }
-  f = this.getIdentifier_asU8();
+  f = message.getIdentifier_asU8();
   if (f.length > 0) {
     writer.writeBytes(
       3,
       f
     );
   }
-  f = this.getMetanet();
+  f = message.getMetanet();
   if (f != null) {
     writer.writeMessage(
       4,
@@ -200,7 +189,7 @@ proto.protobuf.Envelope.prototype.serializeBinaryToWriter = function (writer) {
       proto.protobuf.MetaNet.serializeBinaryToWriter
     );
   }
-  f = this.getEncryptedpayloadsList();
+  f = message.getEncryptedpayloadsList();
   if (f.length > 0) {
     writer.writeRepeatedMessage(
       5,
@@ -212,24 +201,15 @@ proto.protobuf.Envelope.prototype.serializeBinaryToWriter = function (writer) {
 
 
 /**
- * Creates a deep clone of this proto. No data is shared with the original.
- * @return {!proto.protobuf.Envelope} The clone.
- */
-proto.protobuf.Envelope.prototype.cloneMessage = function() {
-  return /** @type {!proto.protobuf.Envelope} */ (jspb.Message.cloneMessage(this));
-};
-
-
-/**
  * optional uint64 Version = 1;
  * @return {number}
  */
 proto.protobuf.Envelope.prototype.getVersion = function() {
-  return /** @type {number} */ (jspb.Message.getFieldProto3(this, 1, 0));
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
 };
 
 
-/** @param {number} value  */
+/** @param {number} value */
 proto.protobuf.Envelope.prototype.setVersion = function(value) {
   jspb.Message.setField(this, 1, value);
 };
@@ -240,7 +220,7 @@ proto.protobuf.Envelope.prototype.setVersion = function(value) {
  * @return {!(string|Uint8Array)}
  */
 proto.protobuf.Envelope.prototype.getType = function() {
-  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldProto3(this, 2, ""));
+  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
 };
 
 
@@ -268,7 +248,7 @@ proto.protobuf.Envelope.prototype.getType_asU8 = function() {
 };
 
 
-/** @param {!(string|Uint8Array)} value  */
+/** @param {!(string|Uint8Array)} value */
 proto.protobuf.Envelope.prototype.setType = function(value) {
   jspb.Message.setField(this, 2, value);
 };
@@ -279,7 +259,7 @@ proto.protobuf.Envelope.prototype.setType = function(value) {
  * @return {!(string|Uint8Array)}
  */
 proto.protobuf.Envelope.prototype.getIdentifier = function() {
-  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldProto3(this, 3, ""));
+  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
 };
 
 
@@ -307,7 +287,7 @@ proto.protobuf.Envelope.prototype.getIdentifier_asU8 = function() {
 };
 
 
-/** @param {!(string|Uint8Array)} value  */
+/** @param {!(string|Uint8Array)} value */
 proto.protobuf.Envelope.prototype.setIdentifier = function(value) {
   jspb.Message.setField(this, 3, value);
 };
@@ -315,15 +295,15 @@ proto.protobuf.Envelope.prototype.setIdentifier = function(value) {
 
 /**
  * optional MetaNet MetaNet = 4;
- * @return {proto.protobuf.MetaNet}
+ * @return {?proto.protobuf.MetaNet}
  */
 proto.protobuf.Envelope.prototype.getMetanet = function() {
-  return /** @type{proto.protobuf.MetaNet} */ (
+  return /** @type{?proto.protobuf.MetaNet} */ (
     jspb.Message.getWrapperField(this, proto.protobuf.MetaNet, 4));
 };
 
 
-/** @param {proto.protobuf.MetaNet|undefined} value  */
+/** @param {?proto.protobuf.MetaNet|undefined} value */
 proto.protobuf.Envelope.prototype.setMetanet = function(value) {
   jspb.Message.setWrapperField(this, 4, value);
 };
@@ -336,7 +316,7 @@ proto.protobuf.Envelope.prototype.clearMetanet = function() {
 
 /**
  * Returns whether this field is set.
- * @return{!boolean}
+ * @return {!boolean}
  */
 proto.protobuf.Envelope.prototype.hasMetanet = function() {
   return jspb.Message.getField(this, 4) != null;
@@ -355,9 +335,19 @@ proto.protobuf.Envelope.prototype.getEncryptedpayloadsList = function() {
 };
 
 
-/** @param {Array.<!proto.protobuf.EncryptedPayload>} value  */
+/** @param {!Array.<!proto.protobuf.EncryptedPayload>} value */
 proto.protobuf.Envelope.prototype.setEncryptedpayloadsList = function(value) {
   jspb.Message.setRepeatedWrapperField(this, 5, value);
+};
+
+
+/**
+ * @param {!proto.protobuf.EncryptedPayload=} opt_value
+ * @param {number=} opt_index
+ * @return {!proto.protobuf.EncryptedPayload}
+ */
+proto.protobuf.Envelope.prototype.addEncryptedpayloads = function(opt_value, opt_index) {
+  return jspb.Message.addToRepeatedWrapperField(this, 5, opt_value, proto.protobuf.EncryptedPayload, opt_index);
 };
 
 
@@ -412,7 +402,7 @@ proto.protobuf.MetaNet.prototype.toObject = function(opt_includeInstance) {
  */
 proto.protobuf.MetaNet.toObject = function(includeInstance, msg) {
   var f, obj = {
-    index: msg.getIndex(),
+    index: jspb.Message.getFieldWithDefault(msg, 1, 0),
     parent: msg.getParent_asB64()
   };
 
@@ -468,42 +458,32 @@ proto.protobuf.MetaNet.deserializeBinaryFromReader = function(msg, reader) {
 
 
 /**
- * Class method variant: serializes the given message to binary data
- * (in protobuf wire format), writing to the given BinaryWriter.
- * @param {!proto.protobuf.MetaNet} message
- * @param {!jspb.BinaryWriter} writer
- */
-proto.protobuf.MetaNet.serializeBinaryToWriter = function(message, writer) {
-  message.serializeBinaryToWriter(writer);
-};
-
-
-/**
  * Serializes the message to binary data (in protobuf wire format).
  * @return {!Uint8Array}
  */
 proto.protobuf.MetaNet.prototype.serializeBinary = function() {
   var writer = new jspb.BinaryWriter();
-  this.serializeBinaryToWriter(writer);
+  proto.protobuf.MetaNet.serializeBinaryToWriter(this, writer);
   return writer.getResultBuffer();
 };
 
 
 /**
- * Serializes the message to binary data (in protobuf wire format),
- * writing to the given BinaryWriter.
+ * Serializes the given message to binary data (in protobuf wire
+ * format), writing to the given BinaryWriter.
+ * @param {!proto.protobuf.MetaNet} message
  * @param {!jspb.BinaryWriter} writer
  */
-proto.protobuf.MetaNet.prototype.serializeBinaryToWriter = function (writer) {
+proto.protobuf.MetaNet.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = this.getIndex();
+  f = message.getIndex();
   if (f !== 0) {
     writer.writeUint32(
       1,
       f
     );
   }
-  f = this.getParent_asU8();
+  f = message.getParent_asU8();
   if (f.length > 0) {
     writer.writeBytes(
       2,
@@ -514,24 +494,15 @@ proto.protobuf.MetaNet.prototype.serializeBinaryToWriter = function (writer) {
 
 
 /**
- * Creates a deep clone of this proto. No data is shared with the original.
- * @return {!proto.protobuf.MetaNet} The clone.
- */
-proto.protobuf.MetaNet.prototype.cloneMessage = function() {
-  return /** @type {!proto.protobuf.MetaNet} */ (jspb.Message.cloneMessage(this));
-};
-
-
-/**
  * optional uint32 Index = 1;
  * @return {number}
  */
 proto.protobuf.MetaNet.prototype.getIndex = function() {
-  return /** @type {number} */ (jspb.Message.getFieldProto3(this, 1, 0));
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
 };
 
 
-/** @param {number} value  */
+/** @param {number} value */
 proto.protobuf.MetaNet.prototype.setIndex = function(value) {
   jspb.Message.setField(this, 1, value);
 };
@@ -542,7 +513,7 @@ proto.protobuf.MetaNet.prototype.setIndex = function(value) {
  * @return {!(string|Uint8Array)}
  */
 proto.protobuf.MetaNet.prototype.getParent = function() {
-  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldProto3(this, 2, ""));
+  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
 };
 
 
@@ -570,7 +541,7 @@ proto.protobuf.MetaNet.prototype.getParent_asU8 = function() {
 };
 
 
-/** @param {!(string|Uint8Array)} value  */
+/** @param {!(string|Uint8Array)} value */
 proto.protobuf.MetaNet.prototype.setParent = function(value) {
   jspb.Message.setField(this, 2, value);
 };
@@ -629,10 +600,11 @@ proto.protobuf.EncryptedPayload.prototype.toObject = function(opt_includeInstanc
  */
 proto.protobuf.EncryptedPayload.toObject = function(includeInstance, msg) {
   var f, obj = {
-    sender: msg.getSender(),
+    sender: jspb.Message.getFieldWithDefault(msg, 1, 0),
     receiversList: jspb.Message.toObjectList(msg.getReceiversList(),
     proto.protobuf.Receiver.toObject, includeInstance),
-    payload: msg.getPayload_asB64()
+    payload: msg.getPayload_asB64(),
+    encryptiontype: jspb.Message.getFieldWithDefault(msg, 4, 0)
   };
 
   if (includeInstance) {
@@ -676,12 +648,15 @@ proto.protobuf.EncryptedPayload.deserializeBinaryFromReader = function(msg, read
     case 2:
       var value = new proto.protobuf.Receiver;
       reader.readMessage(value,proto.protobuf.Receiver.deserializeBinaryFromReader);
-      msg.getReceiversList().push(value);
-      msg.setReceiversList(msg.getReceiversList());
+      msg.addReceivers(value);
       break;
     case 3:
       var value = /** @type {!Uint8Array} */ (reader.readBytes());
       msg.setPayload(value);
+      break;
+    case 4:
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setEncryptiontype(value);
       break;
     default:
       reader.skipField();
@@ -693,42 +668,32 @@ proto.protobuf.EncryptedPayload.deserializeBinaryFromReader = function(msg, read
 
 
 /**
- * Class method variant: serializes the given message to binary data
- * (in protobuf wire format), writing to the given BinaryWriter.
- * @param {!proto.protobuf.EncryptedPayload} message
- * @param {!jspb.BinaryWriter} writer
- */
-proto.protobuf.EncryptedPayload.serializeBinaryToWriter = function(message, writer) {
-  message.serializeBinaryToWriter(writer);
-};
-
-
-/**
  * Serializes the message to binary data (in protobuf wire format).
  * @return {!Uint8Array}
  */
 proto.protobuf.EncryptedPayload.prototype.serializeBinary = function() {
   var writer = new jspb.BinaryWriter();
-  this.serializeBinaryToWriter(writer);
+  proto.protobuf.EncryptedPayload.serializeBinaryToWriter(this, writer);
   return writer.getResultBuffer();
 };
 
 
 /**
- * Serializes the message to binary data (in protobuf wire format),
- * writing to the given BinaryWriter.
+ * Serializes the given message to binary data (in protobuf wire
+ * format), writing to the given BinaryWriter.
+ * @param {!proto.protobuf.EncryptedPayload} message
  * @param {!jspb.BinaryWriter} writer
  */
-proto.protobuf.EncryptedPayload.prototype.serializeBinaryToWriter = function (writer) {
+proto.protobuf.EncryptedPayload.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = this.getSender();
+  f = message.getSender();
   if (f !== 0) {
     writer.writeUint32(
       1,
       f
     );
   }
-  f = this.getReceiversList();
+  f = message.getReceiversList();
   if (f.length > 0) {
     writer.writeRepeatedMessage(
       2,
@@ -736,22 +701,20 @@ proto.protobuf.EncryptedPayload.prototype.serializeBinaryToWriter = function (wr
       proto.protobuf.Receiver.serializeBinaryToWriter
     );
   }
-  f = this.getPayload_asU8();
+  f = message.getPayload_asU8();
   if (f.length > 0) {
     writer.writeBytes(
       3,
       f
     );
   }
-};
-
-
-/**
- * Creates a deep clone of this proto. No data is shared with the original.
- * @return {!proto.protobuf.EncryptedPayload} The clone.
- */
-proto.protobuf.EncryptedPayload.prototype.cloneMessage = function() {
-  return /** @type {!proto.protobuf.EncryptedPayload} */ (jspb.Message.cloneMessage(this));
+  f = message.getEncryptiontype();
+  if (f !== 0) {
+    writer.writeUint32(
+      4,
+      f
+    );
+  }
 };
 
 
@@ -760,11 +723,11 @@ proto.protobuf.EncryptedPayload.prototype.cloneMessage = function() {
  * @return {number}
  */
 proto.protobuf.EncryptedPayload.prototype.getSender = function() {
-  return /** @type {number} */ (jspb.Message.getFieldProto3(this, 1, 0));
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
 };
 
 
-/** @param {number} value  */
+/** @param {number} value */
 proto.protobuf.EncryptedPayload.prototype.setSender = function(value) {
   jspb.Message.setField(this, 1, value);
 };
@@ -782,9 +745,19 @@ proto.protobuf.EncryptedPayload.prototype.getReceiversList = function() {
 };
 
 
-/** @param {Array.<!proto.protobuf.Receiver>} value  */
+/** @param {!Array.<!proto.protobuf.Receiver>} value */
 proto.protobuf.EncryptedPayload.prototype.setReceiversList = function(value) {
   jspb.Message.setRepeatedWrapperField(this, 2, value);
+};
+
+
+/**
+ * @param {!proto.protobuf.Receiver=} opt_value
+ * @param {number=} opt_index
+ * @return {!proto.protobuf.Receiver}
+ */
+proto.protobuf.EncryptedPayload.prototype.addReceivers = function(opt_value, opt_index) {
+  return jspb.Message.addToRepeatedWrapperField(this, 2, opt_value, proto.protobuf.Receiver, opt_index);
 };
 
 
@@ -798,7 +771,7 @@ proto.protobuf.EncryptedPayload.prototype.clearReceiversList = function() {
  * @return {!(string|Uint8Array)}
  */
 proto.protobuf.EncryptedPayload.prototype.getPayload = function() {
-  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldProto3(this, 3, ""));
+  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
 };
 
 
@@ -826,9 +799,24 @@ proto.protobuf.EncryptedPayload.prototype.getPayload_asU8 = function() {
 };
 
 
-/** @param {!(string|Uint8Array)} value  */
+/** @param {!(string|Uint8Array)} value */
 proto.protobuf.EncryptedPayload.prototype.setPayload = function(value) {
   jspb.Message.setField(this, 3, value);
+};
+
+
+/**
+ * optional uint32 EncryptionType = 4;
+ * @return {number}
+ */
+proto.protobuf.EncryptedPayload.prototype.getEncryptiontype = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 4, 0));
+};
+
+
+/** @param {number} value */
+proto.protobuf.EncryptedPayload.prototype.setEncryptiontype = function(value) {
+  jspb.Message.setField(this, 4, value);
 };
 
 
@@ -878,7 +866,7 @@ proto.protobuf.Receiver.prototype.toObject = function(opt_includeInstance) {
  */
 proto.protobuf.Receiver.toObject = function(includeInstance, msg) {
   var f, obj = {
-    index: msg.getIndex(),
+    index: jspb.Message.getFieldWithDefault(msg, 1, 0),
     encryptedkey: msg.getEncryptedkey_asB64()
   };
 
@@ -934,42 +922,32 @@ proto.protobuf.Receiver.deserializeBinaryFromReader = function(msg, reader) {
 
 
 /**
- * Class method variant: serializes the given message to binary data
- * (in protobuf wire format), writing to the given BinaryWriter.
- * @param {!proto.protobuf.Receiver} message
- * @param {!jspb.BinaryWriter} writer
- */
-proto.protobuf.Receiver.serializeBinaryToWriter = function(message, writer) {
-  message.serializeBinaryToWriter(writer);
-};
-
-
-/**
  * Serializes the message to binary data (in protobuf wire format).
  * @return {!Uint8Array}
  */
 proto.protobuf.Receiver.prototype.serializeBinary = function() {
   var writer = new jspb.BinaryWriter();
-  this.serializeBinaryToWriter(writer);
+  proto.protobuf.Receiver.serializeBinaryToWriter(this, writer);
   return writer.getResultBuffer();
 };
 
 
 /**
- * Serializes the message to binary data (in protobuf wire format),
- * writing to the given BinaryWriter.
+ * Serializes the given message to binary data (in protobuf wire
+ * format), writing to the given BinaryWriter.
+ * @param {!proto.protobuf.Receiver} message
  * @param {!jspb.BinaryWriter} writer
  */
-proto.protobuf.Receiver.prototype.serializeBinaryToWriter = function (writer) {
+proto.protobuf.Receiver.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = this.getIndex();
+  f = message.getIndex();
   if (f !== 0) {
     writer.writeUint32(
       1,
       f
     );
   }
-  f = this.getEncryptedkey_asU8();
+  f = message.getEncryptedkey_asU8();
   if (f.length > 0) {
     writer.writeBytes(
       2,
@@ -980,24 +958,15 @@ proto.protobuf.Receiver.prototype.serializeBinaryToWriter = function (writer) {
 
 
 /**
- * Creates a deep clone of this proto. No data is shared with the original.
- * @return {!proto.protobuf.Receiver} The clone.
- */
-proto.protobuf.Receiver.prototype.cloneMessage = function() {
-  return /** @type {!proto.protobuf.Receiver} */ (jspb.Message.cloneMessage(this));
-};
-
-
-/**
  * optional uint32 Index = 1;
  * @return {number}
  */
 proto.protobuf.Receiver.prototype.getIndex = function() {
-  return /** @type {number} */ (jspb.Message.getFieldProto3(this, 1, 0));
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
 };
 
 
-/** @param {number} value  */
+/** @param {number} value */
 proto.protobuf.Receiver.prototype.setIndex = function(value) {
   jspb.Message.setField(this, 1, value);
 };
@@ -1008,7 +977,7 @@ proto.protobuf.Receiver.prototype.setIndex = function(value) {
  * @return {!(string|Uint8Array)}
  */
 proto.protobuf.Receiver.prototype.getEncryptedkey = function() {
-  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldProto3(this, 2, ""));
+  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
 };
 
 
@@ -1036,7 +1005,7 @@ proto.protobuf.Receiver.prototype.getEncryptedkey_asU8 = function() {
 };
 
 
-/** @param {!(string|Uint8Array)} value  */
+/** @param {!(string|Uint8Array)} value */
 proto.protobuf.Receiver.prototype.setEncryptedkey = function(value) {
   jspb.Message.setField(this, 2, value);
 };

@@ -21,6 +21,7 @@ message EncryptedPayload {
     uint32 Sender = 1;
     repeated Receiver Receivers = 2;
     bytes Payload = 3;
+    uint32 EncryptionType = 4;
 }
 
 message Receiver {
