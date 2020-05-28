@@ -4,7 +4,7 @@ import (
 	"bytes"
 
 	"github.com/tokenized/envelope/pkg/golang/envelope/v0/protobuf"
-	"github.com/tokenized/smart-contract/pkg/bitcoin"
+	"github.com/tokenized/pkg/bitcoin"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"

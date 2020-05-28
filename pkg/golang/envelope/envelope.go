@@ -4,16 +4,16 @@ import (
 	"bytes"
 
 	"github.com/tokenized/envelope/pkg/golang/envelope/v0"
-	"github.com/tokenized/smart-contract/pkg/bitcoin"
+	"github.com/tokenized/pkg/bitcoin"
 
 	"github.com/pkg/errors"
 )
 
 const (
 	// Known Protocol Identifiers
-	ProtocolIDTokenized = "tokenized"
+	ProtocolIDTokenized     = "tokenized"
 	ProtocolIDTokenizedTest = "test.tokenized"
-	ProtocolIDFlag = "flag"
+	ProtocolIDFlag          = "flag"
 )
 
 var (
