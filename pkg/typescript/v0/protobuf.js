@@ -1,4 +1,4 @@
-// source: messages.proto
+// source: envelope.proto
 /**
  * @fileoverview
  * @enhanceable
