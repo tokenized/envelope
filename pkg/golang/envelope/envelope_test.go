@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/tokenized/envelope/pkg/golang/envelope/v0"
+	v0 "github.com/tokenized/envelope/pkg/golang/envelope/v0"
 	"github.com/tokenized/envelope/pkg/golang/envelope/v0/protobuf"
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/wire"

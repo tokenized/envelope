@@ -3,7 +3,7 @@ package envelope
 import (
 	"bytes"
 
-	"github.com/tokenized/envelope/pkg/golang/envelope/v0"
+	v0 "github.com/tokenized/envelope/pkg/golang/envelope/v0"
 	"github.com/tokenized/pkg/bitcoin"
 
 	"github.com/pkg/errors"

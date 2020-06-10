@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+option go_package="github.com/tokenized/envelope/pkg/golang/envelope/v0/protobuf";
+
 package protobuf;
 
 message Envelope {
