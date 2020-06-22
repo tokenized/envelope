@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+option go_package="github.com/tokenized/envelope/pkg/golang/envelope/v0/protobuf";
+
 package protobuf;
 
 message Envelope {
@@ -21,6 +23,7 @@ message EncryptedPayload {
     uint32 Sender = 1;
     repeated Receiver Receivers = 2;
     bytes Payload = 3;
+    uint32 EncryptionType = 4;
 }
 
 message Receiver {

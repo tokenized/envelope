@@ -1,8 +1,8 @@
 package v0
 
 import (
-	"github.com/tokenized/smart-contract/pkg/bitcoin"
-	"github.com/tokenized/smart-contract/pkg/wire"
+	"github.com/tokenized/pkg/bitcoin"
+	"github.com/tokenized/pkg/wire"
 )
 
 type Message struct {
@@ -13,6 +13,37 @@ type Message struct {
 	metaNet           *MetaNet
 	encryptedPayloads []*EncryptedPayload
 	payload           []byte
+}
+
+// EncryptedPayload holds encrypted data.
+// The data will be encrypted in different ways depending on the number of receivers.
+//
+// Sender:
+//   Sender's input must be a P2PKH or a P2RPH unlocking script so that it contains the public key.
+//
+// Receivers:
+//   Receiver's outputs must be P2PKH locking scripts so that it contains the hash of the public
+//     key.
+//   0 receivers - data is encrypted with sender's private key.
+//   1 receiver  - data is encrypted with a derived shared secret.
+//   2 receivers - data is encrypted with a random private key and the private key is encrypted
+//     with the derived shared secret of each receiver and included in the message.
+//
+// EncryptionType:
+//   0 Direct - encryption secret based on public keys in transaction pointed to by sender and
+//       receivers.
+//   1 Indirect - encryption secret is from previous context.
+type EncryptedPayload struct {
+	sender         uint32
+	receivers      []*Receiver
+	payload        []byte // Data that is to be or was encrypted
+	encryptionType uint32
+}
+
+// Index to receiver and if more than one, encrypted keys
+type Receiver struct {
+	index        uint32
+	encryptedKey []byte
 }
 
 // NewMessage creates a message.
@@ -73,7 +104,7 @@ func (m *Message) SetMetaNet(index uint32, publicKey bitcoin.PublicKey, parent [
 	m.metaNet = NewMetaNet(index, publicKey, parent)
 }
 
-// NewEncryptedPayload creates an encrypted payload object.
+// AddEncryptedPayload creates an encrypted payload object and adds it to the message.
 // senderIndex is the input index containing the public key of the creator of the encrypted payload.
 // sender is the key used to create the encrypted payload.
 // receivers are the public keys of those receiving the encrypted payload.
@@ -93,6 +124,30 @@ func (m *Message) AddEncryptedPayload(payload []byte, tx *wire.MsgTx, senderInde
 	sender bitcoin.Key, receivers []bitcoin.PublicKey) error {
 	encryptedPayload, err := NewEncryptedPayload(payload, tx, senderIndex, sender,
 		receivers)
+	if err != nil {
+		return err
+	}
+	m.encryptedPayloads = append(m.encryptedPayloads, encryptedPayload)
+	return nil
+}
+
+// AddEncryptedPayloadDirect creates an encrypted payload with all information necessary to decrypt,
+//   except the private key, included in the message.
+func (m *Message) AddEncryptedPayloadDirect(payload []byte, tx *wire.MsgTx, senderIndex uint32,
+	sender bitcoin.Key, receivers []bitcoin.PublicKey) (bitcoin.Hash32, error) {
+	encryptedPayload, key, err := NewEncryptedPayloadDirect(payload, tx, senderIndex, sender,
+		receivers)
+	if err != nil {
+		return key, err
+	}
+	m.encryptedPayloads = append(m.encryptedPayloads, encryptedPayload)
+	return key, nil
+}
+
+// AddEncryptedPayloadIndirect creates an encryped payload and adds it to the message. The message
+//   is encrypted with the specified key instead of with keys in the message.
+func (m *Message) AddEncryptedPayloadIndirect(payload []byte, tx *wire.MsgTx, key bitcoin.Hash32) error {
+	encryptedPayload, err := NewEncryptedPayloadIndirect(payload, tx, key)
 	if err != nil {
 		return err
 	}

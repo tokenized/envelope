@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/tokenized/envelope/pkg/golang/envelope/v0"
+	v0 "github.com/tokenized/envelope/pkg/golang/envelope/v0"
 	"github.com/tokenized/envelope/pkg/golang/envelope/v0/protobuf"
-	"github.com/tokenized/smart-contract/pkg/bitcoin"
-	"github.com/tokenized/smart-contract/pkg/wire"
+	"github.com/tokenized/pkg/bitcoin"
+	"github.com/tokenized/pkg/wire"
 
 	"github.com/golang/protobuf/proto"
 )
