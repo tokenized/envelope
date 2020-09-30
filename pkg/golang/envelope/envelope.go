@@ -14,6 +14,7 @@ const (
 	ProtocolIDTokenized     = "tokenized"
 	ProtocolIDTokenizedTest = "test.tokenized"
 	ProtocolIDFlag          = "flag"
+	ProtocolIDUUID          = "uuid" // Protocol id for Universally Unique IDentifiers
 )
 
 var (
