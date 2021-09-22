@@ -87,6 +87,10 @@ func (m *Message) Payload() []byte {
 	return m.payload
 }
 
+func (m *Message) SetPayload(b []byte) {
+	m.payload = b
+}
+
 func (m *Message) SetPayloadType(t []byte) {
 	m.payloadType = t
 }

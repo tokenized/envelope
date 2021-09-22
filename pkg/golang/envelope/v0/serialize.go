@@ -102,7 +102,7 @@ func Deserialize(buf *bytes.Reader) (*Message, error) {
 	var err error
 	opCode, result.payloadProtocol, err = bitcoin.ParsePushDataScript(buf)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to parse protocol ID")
+		return nil, errors.Wrap(err, "parse protocol ID")
 	}
 	if len(result.payloadProtocol) == 0 && opCode != bitcoin.OP_FALSE { // Non push data op code
 		return nil, ErrNotEnvelope
@@ -111,13 +111,13 @@ func Deserialize(buf *bytes.Reader) (*Message, error) {
 	// Envelope
 	_, envelopeData, err := bitcoin.ParsePushDataScript(buf)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to read MetaNet data")
+		return nil, errors.Wrap(err, "read MetaNet data")
 	}
 
 	var envelope protobuf.Envelope
 	if len(envelopeData) != 0 {
 		if err = proto.Unmarshal(envelopeData, &envelope); err != nil {
-			return nil, errors.Wrap(err, "Failed envelope protobuf unmarshaling")
+			return nil, errors.Wrap(err, "envelope protobuf unmarshaling")
 		}
 	}
 
@@ -163,8 +163,8 @@ func Deserialize(buf *bytes.Reader) (*Message, error) {
 
 	// Public payload
 	_, result.payload, err = bitcoin.ParsePushDataScript(buf)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to read payload")
+	if err != nil && (errors.Cause(err) != bitcoin.ErrNotPushOp || len(result.payload) == 0) {
+		return nil, errors.Wrap(err, "read payload")
 	}
 
 	return &result, nil

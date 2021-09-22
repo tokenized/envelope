@@ -107,7 +107,7 @@ Envelope uses its own integrated encryption scheme because it is designed to be 
 
 The `EncryptionType` field of encrypted payload is 0.  The `Sender` and `Receivers` fields are used to derive the encryption key.
 
-Direct encryption is a method of encryption using an encryption key that can be derived from the public keys either in the transaction inputs and outputs or referenced by hashes in the inputs and outputs. The encryption key is derived using  and a private key for one of those public keys and at least one of those public keys
+Direct encryption is a method of encryption using an encryption key that can be derived from the public keys either in the transaction inputs and outputs or referenced by hashes in the inputs and outputs. The encryption key is derived using a private key for one of those public keys and at least one of those public keys.
 
 #### Private
 

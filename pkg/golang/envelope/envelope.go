@@ -30,6 +30,8 @@ type BaseMessage interface {
 	PayloadIdentifier() []byte // Protocol specific identifier for the payload. (i.e. message type, data name)
 	Payload() []byte
 
+	SetPayload([]byte)
+
 	SetPayloadType([]byte)
 
 	SetPayloadIdentifier([]byte)
@@ -50,7 +52,7 @@ func Deserialize(buf *bytes.Reader) (BaseMessage, error) {
 
 	b, err = buf.ReadByte()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to read op return")
+		return nil, errors.Wrap(err, "read op return")
 	}
 
 	if b != bitcoin.OP_RETURN {
@@ -60,7 +62,7 @@ func Deserialize(buf *bytes.Reader) (BaseMessage, error) {
 
 		b, err = buf.ReadByte()
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to read op return")
+			return nil, errors.Wrap(err, "read op return")
 		}
 
 		if b != bitcoin.OP_RETURN {
@@ -71,7 +73,7 @@ func Deserialize(buf *bytes.Reader) (BaseMessage, error) {
 	// Envelope Protocol ID
 	_, protocolID, err := bitcoin.ParsePushDataScript(buf)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to parse protocol ID")
+		return nil, errors.Wrap(err, "parse protocol ID")
 	}
 	if len(protocolID) != 2 {
 		return nil, ErrNotEnvelope
