@@ -50,8 +50,8 @@ github.com/scottjbarr/redis v0.0.1/go.mod h1:HIzxEkRRpIDMZHOU/iavqyd+uQeQwqQncXo
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H4=
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
-github.com/tokenized/pkg v0.3.1-0.20210922033156-c56ef81f8afa h1:DfIHPx7xEJ2PiY3WB4iBi3snU6JhVNO9LFozninIQ2c=
-github.com/tokenized/pkg v0.3.1-0.20210922033156-c56ef81f8afa/go.mod h1:oZmF8k3efqaE9e98cFta++FAzY+tyyfuEv4xkLuWIVk=
+github.com/tokenized/pkg v0.3.1-0.20211105210832-4324054fdba9 h1:Ki7za2dqAWBQBWwg2xwgt/sRBLXudSx/2cao8xwEKtM=
+github.com/tokenized/pkg v0.3.1-0.20211105210832-4324054fdba9/go.mod h1:oZmF8k3efqaE9e98cFta++FAzY+tyyfuEv4xkLuWIVk=
 github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564 h1:NXXyQVeRVLK8Xu27/hkkjwVOZLk5v4ZBEvvMtqMqznM=
 github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564/go.mod h1:0/YuQQF676+d4CMNclTqGUam1EDwz0B8o03K9pQqA3c=
 golang.org/x/crypto v0.0.0-20170930174604-9419663f5a44/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
