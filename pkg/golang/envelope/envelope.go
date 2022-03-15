@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	v0 "github.com/tokenized/envelope/pkg/golang/envelope/v0"
+	v1 "github.com/tokenized/envelope/pkg/golang/envelope/v1"
 	"github.com/tokenized/pkg/bitcoin"
 
 	"github.com/pkg/errors"
@@ -14,7 +15,7 @@ const (
 	ProtocolIDTokenized     = "tokenized"
 	ProtocolIDTokenizedTest = "test.tokenized"
 	ProtocolIDFlag          = "flag"
-	ProtocolIDUUID          = "uuid" // Protocol id for Universally Unique IDentifiers
+	ProtocolIDUUID          = "uuid" // Protocol ID for Universally Unique IDentifiers
 )
 
 var (
@@ -23,16 +24,11 @@ var (
 )
 
 type BaseMessage interface {
-	EnvelopeVersion() uint8    // Envelope protocol version
-	PayloadProtocol() []byte   // Protocol ID of payload. (recommended to be ascii text)
-	PayloadVersion() uint64    // Protocol specific version for the payload.
-	PayloadType() []byte       // Data type of payload.
-	PayloadIdentifier() []byte // Protocol specific identifier for the payload. (i.e. message type, data name)
-	Payload() []byte
+	EnvelopeVersion() uint8     // Envelope protocol version
+	PayloadProtocols() [][]byte // Protocol IDs of payloads. (recommended to be ascii text)
 
-	SetPayloadType([]byte)
-
-	SetPayloadIdentifier([]byte)
+	PayloadCount() int
+	PayloadAt(offset int) []byte
 
 	// Serialize creates an OP_RETURN script in the "envelope" format containing the specified data.
 	Serialize(buf *bytes.Buffer) error
@@ -50,7 +46,7 @@ func Deserialize(buf *bytes.Reader) (BaseMessage, error) {
 
 	b, err = buf.ReadByte()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to read op return")
+		return nil, errors.Wrap(err, "read op return")
 	}
 
 	if b != bitcoin.OP_RETURN {
@@ -60,7 +56,7 @@ func Deserialize(buf *bytes.Reader) (BaseMessage, error) {
 
 		b, err = buf.ReadByte()
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to read op return")
+			return nil, errors.Wrap(err, "read op return")
 		}
 
 		if b != bitcoin.OP_RETURN {
@@ -71,7 +67,7 @@ func Deserialize(buf *bytes.Reader) (BaseMessage, error) {
 	// Envelope Protocol ID
 	_, protocolID, err := bitcoin.ParsePushDataScript(buf)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to parse protocol ID")
+		return nil, errors.Wrap(err, "parse protocol ID")
 	}
 	if len(protocolID) != 2 {
 		return nil, ErrNotEnvelope
@@ -79,12 +75,23 @@ func Deserialize(buf *bytes.Reader) (BaseMessage, error) {
 	if protocolID[0] != 0xbd {
 		return nil, ErrNotEnvelope
 	}
-	if protocolID[1] != 0 {
+
+	// Version 0 for backwards compatibility
+	if protocolID[1] == 0 {
+		result, err := v0.Deserialize(buf)
+		if err == v0.ErrNotEnvelope {
+			return nil, ErrNotEnvelope
+		}
+		return result, err
+	}
+
+	if protocolID[1] != 1 {
 		return nil, ErrUnknownVersion
 	}
 
-	result, err := v0.Deserialize(buf)
-	if err == v0.ErrNotEnvelope {
+	// Version 1
+	result, err := v1.Deserialize(buf)
+	if err == v1.ErrNotEnvelope {
 		return nil, ErrNotEnvelope
 	}
 	return result, err

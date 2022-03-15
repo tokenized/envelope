@@ -67,25 +67,35 @@ func TestRetention(t *testing.T) {
 		}
 
 		reader := bytes.NewReader(buf.Bytes())
-		read, err := Deserialize(reader)
+		readBase, err := Deserialize(reader)
 		if err != nil {
 			t.Fatalf("Test %d Failed Deserialize : %s", i, err)
 		}
 
+		read, ok := readBase.(*v0.Message)
+		if !ok {
+			t.Fatalf("Wrong message type")
+		}
+
 		if !bytes.Equal(test.protocol, read.PayloadProtocol()) {
-			t.Fatalf("Test %d protocol wasn't retained : want 0x%x, got 0x%x", i+1, test.protocol, read.PayloadProtocol())
+			t.Fatalf("Test %d protocol wasn't retained : want 0x%x, got 0x%x", i+1, test.protocol,
+				read.PayloadProtocol())
 		}
 		if test.version != read.PayloadVersion() {
-			t.Fatalf("Test %d version wasn't retained : want %d, got %d", i+1, test.version, read.PayloadVersion())
+			t.Fatalf("Test %d version wasn't retained : want %d, got %d", i+1, test.version,
+				read.PayloadVersion())
 		}
 		if !bytes.Equal(test.payloadType, read.PayloadType()) {
-			t.Fatalf("Test %d payload type wasn't retained : want 0x%x, got 0x%x", i+1, test.payloadType, read.PayloadType())
+			t.Fatalf("Test %d payload type wasn't retained : want 0x%x, got 0x%x", i+1,
+				test.payloadType, read.PayloadType())
 		}
 		if !bytes.Equal(test.identifier, read.PayloadIdentifier()) {
-			t.Fatalf("Test %d identifier wasn't retained : want 0x%x, got 0x%x", i+1, test.identifier, read.PayloadIdentifier())
+			t.Fatalf("Test %d identifier wasn't retained : want 0x%x, got 0x%x", i+1,
+				test.identifier, read.PayloadIdentifier())
 		}
 		if !bytes.Equal(test.payload, read.Payload()) {
-			t.Fatalf("Test %d payload wasn't retained : want 0x%x, got 0x%x", i+1, test.payload, read.Payload())
+			t.Fatalf("Test %d payload wasn't retained : want 0x%x, got 0x%x", i+1, test.payload,
+				read.Payload())
 		}
 	}
 }
@@ -421,7 +431,7 @@ func addFakeInput(tx *wire.MsgTx, key bitcoin.Key) error {
 		return err
 	}
 	tx.TxIn = append(tx.TxIn, &wire.TxIn{
-		SignatureScript: fakeScriptBuf.Bytes(),
+		UnlockingScript: fakeScriptBuf.Bytes(),
 		Sequence:        0xffffffff,
 	})
 	return nil
@@ -446,8 +456,8 @@ func addFakeOutput(tx *wire.MsgTx, key bitcoin.Key) error {
 		return err
 	}
 	tx.TxOut = append(tx.TxOut, &wire.TxOut{
-		PkScript: script,
-		Value:    100,
+		LockingScript: script,
+		Value:         100,
 	})
 	return nil
 }

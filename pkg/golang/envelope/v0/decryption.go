@@ -24,7 +24,7 @@ func (ep *EncryptedPayload) SenderPublicKey(tx *wire.MsgTx) (bitcoin.PublicKey, 
 			len(tx.TxIn))
 	}
 
-	spk, err := bitcoin.PublicKeyFromUnlockingScript(tx.TxIn[ep.sender].SignatureScript)
+	spk, err := bitcoin.PublicKeyFromUnlockingScript(tx.TxIn[ep.sender].UnlockingScript)
 	if err != nil {
 		return bitcoin.PublicKey{}, err
 	}
@@ -40,7 +40,7 @@ func (ep *EncryptedPayload) ReceiverAddresses(tx *wire.MsgTx) ([]bitcoin.RawAddr
 				len(tx.TxOut))
 		}
 
-		ra, err := bitcoin.RawAddressFromLockingScript(tx.TxOut[receiver.index].PkScript)
+		ra, err := bitcoin.RawAddressFromLockingScript(tx.TxOut[receiver.index].LockingScript)
 		if err != nil {
 			continue
 		}
@@ -76,7 +76,7 @@ func (ep *EncryptedPayload) SenderDecryptKey(tx *wire.MsgTx, senderKey bitcoin.K
 		return nil, bitcoin.Hash32{}, errors.New("Sender index out of range")
 	}
 
-	senderPubKeyData, err := bitcoin.PublicKeyFromUnlockingScript(tx.TxIn[ep.sender].SignatureScript)
+	senderPubKeyData, err := bitcoin.PublicKeyFromUnlockingScript(tx.TxIn[ep.sender].UnlockingScript)
 	if err != nil {
 		return nil, bitcoin.Hash32{}, err
 	}
@@ -107,7 +107,7 @@ func (ep *EncryptedPayload) SenderDecryptKey(tx *wire.MsgTx, senderKey bitcoin.K
 			continue
 		}
 
-		rawAddress, err := bitcoin.RawAddressFromLockingScript(tx.TxOut[receiver.index].PkScript)
+		rawAddress, err := bitcoin.RawAddressFromLockingScript(tx.TxOut[receiver.index].LockingScript)
 		if err != nil {
 			continue
 		}
@@ -185,7 +185,7 @@ func (ep *EncryptedPayload) ReceiverDecryptKey(tx *wire.MsgTx, receiverKey bitco
 		return nil, bitcoin.Hash32{}, errors.New("Sender index out of range")
 	}
 
-	senderPubKeyData, err := bitcoin.PublicKeyFromUnlockingScript(tx.TxIn[ep.sender].SignatureScript)
+	senderPubKeyData, err := bitcoin.PublicKeyFromUnlockingScript(tx.TxIn[ep.sender].UnlockingScript)
 	if err != nil {
 		return nil, bitcoin.Hash32{}, err
 	}
@@ -203,7 +203,7 @@ func (ep *EncryptedPayload) ReceiverDecryptKey(tx *wire.MsgTx, receiverKey bitco
 			continue
 		}
 
-		rawAddress, err := bitcoin.RawAddressFromLockingScript(tx.TxOut[receiver.index].PkScript)
+		rawAddress, err := bitcoin.RawAddressFromLockingScript(tx.TxOut[receiver.index].LockingScript)
 		if err != nil {
 			continue
 		}

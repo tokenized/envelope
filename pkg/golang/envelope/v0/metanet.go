@@ -34,7 +34,7 @@ func (mn *MetaNet) PublicKey(tx *wire.MsgTx) (bitcoin.PublicKey, error) {
 		return bitcoin.PublicKey{}, errors.New("Index out of range")
 	}
 
-	pubKey, err := bitcoin.PublicKeyFromUnlockingScript(tx.TxIn[mn.index].SignatureScript)
+	pubKey, err := bitcoin.PublicKeyFromUnlockingScript(tx.TxIn[mn.index].UnlockingScript)
 	if err != nil {
 		return bitcoin.PublicKey{}, err
 	}

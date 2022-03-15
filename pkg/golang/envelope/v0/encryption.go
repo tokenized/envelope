@@ -37,7 +37,7 @@ func NewEncryptedPayloadDirect(payload []byte, tx *wire.MsgTx, senderIndex uint3
 		receiverIndex := uint32(0)
 		found := false
 		for index, output := range tx.TxOut {
-			rawAddress, err := bitcoin.RawAddressFromLockingScript(output.PkScript)
+			rawAddress, err := bitcoin.RawAddressFromLockingScript(output.LockingScript)
 			if err != nil {
 				continue
 			}
@@ -84,7 +84,7 @@ func NewEncryptedPayloadDirect(payload []byte, tx *wire.MsgTx, senderIndex uint3
 			receiverIndex := uint32(0)
 			found := false
 			for index, output := range tx.TxOut {
-				rawAddress, err := bitcoin.RawAddressFromLockingScript(output.PkScript)
+				rawAddress, err := bitcoin.RawAddressFromLockingScript(output.LockingScript)
 				if err != nil {
 					continue
 				}
