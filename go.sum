@@ -63,8 +63,8 @@ github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/tokenized/config v0.0.4-0.20220304163631-6373c9a80410/go.mod h1:+8nT8o80nFsxk7Qt5utgfAkEIFNHFtb26hD56hMlSZE=
 github.com/tokenized/pkg v0.2.0/go.mod h1:QJIVlpGu5AUytmnjmMGEZGJo59LUOG4xpi/PUN9RLLg=
-github.com/tokenized/pkg v0.3.1-0.20220314213803-627e5ee08648 h1:1qvSBjLR051rdG5JnyCq98qjuX86sPz2Ax9MQ6tUEYo=
-github.com/tokenized/pkg v0.3.1-0.20220314213803-627e5ee08648/go.mod h1:prKrxFdsqeaXEoIQOyke4alF6bptYJP+663XDxlzw6k=
+github.com/tokenized/pkg v0.4.0 h1:htH1pvsWmA4SSN8BxzBGbnxO5lYGP9qG8pCQYBcQjv4=
+github.com/tokenized/pkg v0.4.0/go.mod h1:prKrxFdsqeaXEoIQOyke4alF6bptYJP+663XDxlzw6k=
 github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564 h1:NXXyQVeRVLK8Xu27/hkkjwVOZLk5v4ZBEvvMtqMqznM=
 github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564/go.mod h1:0/YuQQF676+d4CMNclTqGUam1EDwz0B8o03K9pQqA3c=
 go.uber.org/atomic v1.6.0/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=
