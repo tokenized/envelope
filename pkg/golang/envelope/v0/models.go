@@ -55,6 +55,22 @@ func (m *Message) EnvelopeVersion() uint8 {
 	return 0
 }
 
+func (m *Message) PayloadProtocols() [][]byte {
+	return [][]byte{m.payloadProtocol}
+}
+
+func (m *Message) PayloadCount() int {
+	return 1
+}
+
+func (m *Message) PayloadAt(offset int) []byte {
+	if offset != 0 {
+		return nil
+	}
+
+	return m.payload
+}
+
 func (m *Message) PayloadProtocol() []byte {
 	return m.payloadProtocol
 }

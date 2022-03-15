@@ -10,7 +10,6 @@ tools:
 	go get golang.org/x/tools/cmd/goimports
 
 test:
-	@mkdir tmp || echo "tmp already exists"
 	go test ./...
 
 format:

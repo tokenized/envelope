@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	v0 "github.com/tokenized/envelope/pkg/golang/envelope/v0"
+	v1 "github.com/tokenized/envelope/pkg/golang/envelope/v1"
 	"github.com/tokenized/pkg/bitcoin"
 
 	"github.com/pkg/errors"
@@ -14,7 +15,7 @@ const (
 	ProtocolIDTokenized     = "tokenized"
 	ProtocolIDTokenizedTest = "test.tokenized"
 	ProtocolIDFlag          = "flag"
-	ProtocolIDUUID          = "uuid" // Protocol id for Universally Unique IDentifiers
+	ProtocolIDUUID          = "uuid" // Protocol ID for Universally Unique IDentifiers
 )
 
 var (
@@ -23,18 +24,11 @@ var (
 )
 
 type BaseMessage interface {
-	EnvelopeVersion() uint8    // Envelope protocol version
-	PayloadProtocol() []byte   // Protocol ID of payload. (recommended to be ascii text)
-	PayloadVersion() uint64    // Protocol specific version for the payload.
-	PayloadType() []byte       // Data type of payload.
-	PayloadIdentifier() []byte // Protocol specific identifier for the payload. (i.e. message type, data name)
-	Payload() []byte
+	EnvelopeVersion() uint8     // Envelope protocol version
+	PayloadProtocols() [][]byte // Protocol IDs of payloads. (recommended to be ascii text)
 
-	SetPayload([]byte)
-
-	SetPayloadType([]byte)
-
-	SetPayloadIdentifier([]byte)
+	PayloadCount() int
+	PayloadAt(offset int) []byte
 
 	// Serialize creates an OP_RETURN script in the "envelope" format containing the specified data.
 	Serialize(buf *bytes.Buffer) error
@@ -81,12 +75,23 @@ func Deserialize(buf *bytes.Reader) (BaseMessage, error) {
 	if protocolID[0] != 0xbd {
 		return nil, ErrNotEnvelope
 	}
-	if protocolID[1] != 0 {
+
+	// Version 0 for backwards compatibility
+	if protocolID[1] == 0 {
+		result, err := v0.Deserialize(buf)
+		if err == v0.ErrNotEnvelope {
+			return nil, ErrNotEnvelope
+		}
+		return result, err
+	}
+
+	if protocolID[1] != 1 {
 		return nil, ErrUnknownVersion
 	}
 
-	result, err := v0.Deserialize(buf)
-	if err == v0.ErrNotEnvelope {
+	// Version 1
+	result, err := v1.Deserialize(buf)
+	if err == v1.ErrNotEnvelope {
 		return nil, ErrNotEnvelope
 	}
 	return result, err

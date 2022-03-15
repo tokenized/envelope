@@ -67,9 +67,14 @@ func TestRetention(t *testing.T) {
 		}
 
 		reader := bytes.NewReader(buf.Bytes())
-		read, err := Deserialize(reader)
+		readBase, err := Deserialize(reader)
 		if err != nil {
 			t.Fatalf("Test %d Failed Deserialize : %s", i, err)
+		}
+
+		read, ok := readBase.(*v0.Message)
+		if !ok {
+			t.Fatalf("Wrong message type")
 		}
 
 		if !bytes.Equal(test.protocol, read.PayloadProtocol()) {
