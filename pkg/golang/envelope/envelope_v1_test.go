@@ -4,27 +4,28 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/tokenized/envelope/pkg/golang/envelope/base"
 	v1 "github.com/tokenized/envelope/pkg/golang/envelope/v1"
 )
 
 var v1RetentionTests = []struct {
-	protocolIDs [][]byte
+	protocolIDs base.ProtocolIDs
 	payloads    [][]byte
 }{
 	{
-		protocolIDs: [][]byte{[]byte("tokenized")},
+		protocolIDs: base.ProtocolIDs{base.ProtocolID("tokenized")},
 		payloads:    [][]byte{[]byte("T1"), []byte("Test data 1")},
 	},
 	{
-		protocolIDs: [][]byte{[]byte("test")},
+		protocolIDs: base.ProtocolIDs{base.ProtocolID("test")},
 		payloads:    [][]byte{[]byte("5")},
 	},
 	{
-		protocolIDs: [][]byte{[]byte{0xbe, 0xef}},
+		protocolIDs: base.ProtocolIDs{base.ProtocolID{0xbe, 0xef}},
 		payloads:    nil,
 	},
 	{
-		protocolIDs: [][]byte{[]byte{0xbe, 0xef}},
+		protocolIDs: base.ProtocolIDs{base.ProtocolID{0xbe, 0xef}},
 		payloads:    nil,
 	},
 }

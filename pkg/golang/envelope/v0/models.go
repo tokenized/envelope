@@ -1,15 +1,16 @@
 package v0
 
 import (
+	"github.com/tokenized/envelope/pkg/golang/envelope/base"
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/wire"
 )
 
 type Message struct {
-	payloadProtocol   []byte // Protocol ID of payload. (recommended to be ascii text)
-	payloadVersion    uint64 // Protocol specific version for the payload.
-	payloadType       []byte // Data type of payload.
-	payloadIdentifier []byte // Protocol specific identifier for the payload. (i.e. message type, data name)
+	payloadProtocol   base.ProtocolID // Protocol ID of payload. (recommended to be ascii text)
+	payloadVersion    uint64          // Protocol specific version for the payload.
+	payloadType       []byte          // Data type of payload.
+	payloadIdentifier []byte          // Protocol specific identifier for the payload. (i.e. message type, data name)
 	metaNet           *MetaNet
 	encryptedPayloads []*EncryptedPayload
 	payload           []byte
@@ -47,7 +48,7 @@ type Receiver struct {
 }
 
 // NewMessage creates a message.
-func NewMessage(protocol []byte, version uint64, payload []byte) *Message {
+func NewMessage(protocol base.ProtocolID, version uint64, payload []byte) *Message {
 	return &Message{payloadProtocol: protocol, payloadVersion: version, payload: payload}
 }
 
@@ -55,8 +56,8 @@ func (m *Message) EnvelopeVersion() uint8 {
 	return 0
 }
 
-func (m *Message) PayloadProtocols() [][]byte {
-	return [][]byte{m.payloadProtocol}
+func (m *Message) PayloadProtocols() base.ProtocolIDs {
+	return base.ProtocolIDs{m.payloadProtocol}
 }
 
 func (m *Message) PayloadCount() int {
@@ -71,7 +72,7 @@ func (m *Message) PayloadAt(offset int) []byte {
 	return m.payload
 }
 
-func (m *Message) PayloadProtocol() []byte {
+func (m *Message) PayloadProtocol() base.ProtocolID {
 	return m.payloadProtocol
 }
 

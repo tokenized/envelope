@@ -1,16 +1,18 @@
 package v1
 
+import "github.com/tokenized/envelope/pkg/golang/envelope/base"
+
 const (
 	version = uint8(1)
 )
 
 type Message struct {
-	payloadProtocols [][]byte
+	payloadProtocols base.ProtocolIDs
 	payloads         [][]byte
 }
 
 // NewMessage creates a message.
-func NewMessage(protocols [][]byte, payloads [][]byte) *Message {
+func NewMessage(protocols base.ProtocolIDs, payloads [][]byte) *Message {
 	return &Message{payloadProtocols: protocols, payloads: payloads}
 }
 
@@ -18,7 +20,7 @@ func (m *Message) EnvelopeVersion() uint8 {
 	return version
 }
 
-func (m *Message) PayloadProtocols() [][]byte {
+func (m *Message) PayloadProtocols() base.ProtocolIDs {
 	return m.payloadProtocols
 }
 
@@ -33,7 +35,7 @@ func (m *Message) PayloadAt(offset int) []byte {
 	return m.payloads[offset]
 }
 
-func (m *Message) AddProtocolID(protocolID []byte) {
+func (m *Message) AddProtocolID(protocolID base.ProtocolID) {
 	m.payloadProtocols = append(m.payloadProtocols, protocolID)
 }
 

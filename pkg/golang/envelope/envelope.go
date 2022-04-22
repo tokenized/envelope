@@ -3,6 +3,7 @@ package envelope
 import (
 	"bytes"
 
+	"github.com/tokenized/envelope/pkg/golang/envelope/base"
 	v0 "github.com/tokenized/envelope/pkg/golang/envelope/v0"
 	v1 "github.com/tokenized/envelope/pkg/golang/envelope/v1"
 	"github.com/tokenized/pkg/bitcoin"
@@ -10,22 +11,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	// Known Protocol Identifiers
-	ProtocolIDTokenized     = "tokenized"
-	ProtocolIDTokenizedTest = "test.tokenized"
-	ProtocolIDFlag          = "flag"
-	ProtocolIDUUID          = "uuid" // Protocol ID for Universally Unique IDentifiers
-)
-
-var (
-	ErrNotEnvelope    = errors.New("Not an envelope")
-	ErrUnknownVersion = errors.New("Unknown version")
-)
-
 type BaseMessage interface {
-	EnvelopeVersion() uint8     // Envelope protocol version
-	PayloadProtocols() [][]byte // Protocol IDs of payloads. (recommended to be ascii text)
+	EnvelopeVersion() uint8             // Envelope protocol version
+	PayloadProtocols() base.ProtocolIDs // Protocol IDs of payloads. (recommended to be ascii text)
 
 	PayloadCount() int
 	PayloadAt(offset int) []byte
@@ -38,7 +26,7 @@ type BaseMessage interface {
 func Deserialize(buf *bytes.Reader) (BaseMessage, error) {
 	// Header
 	if buf.Len() < 5 {
-		return nil, ErrNotEnvelope
+		return nil, base.ErrNotEnvelope
 	}
 
 	var b byte
@@ -51,7 +39,7 @@ func Deserialize(buf *bytes.Reader) (BaseMessage, error) {
 
 	if b != bitcoin.OP_RETURN {
 		if b != bitcoin.OP_FALSE {
-			return nil, ErrNotEnvelope
+			return nil, base.ErrNotEnvelope
 		}
 
 		b, err = buf.ReadByte()
@@ -60,7 +48,7 @@ func Deserialize(buf *bytes.Reader) (BaseMessage, error) {
 		}
 
 		if b != bitcoin.OP_RETURN {
-			return nil, ErrNotEnvelope
+			return nil, base.ErrNotEnvelope
 		}
 	}
 
@@ -70,29 +58,21 @@ func Deserialize(buf *bytes.Reader) (BaseMessage, error) {
 		return nil, errors.Wrap(err, "parse protocol ID")
 	}
 	if len(protocolID) != 2 {
-		return nil, ErrNotEnvelope
+		return nil, base.ErrNotEnvelope
 	}
 	if protocolID[0] != 0xbd {
-		return nil, ErrNotEnvelope
+		return nil, base.ErrNotEnvelope
 	}
 
 	// Version 0 for backwards compatibility
 	if protocolID[1] == 0 {
-		result, err := v0.Deserialize(buf)
-		if err == v0.ErrNotEnvelope {
-			return nil, ErrNotEnvelope
-		}
-		return result, err
+		return v0.Deserialize(buf)
 	}
 
 	if protocolID[1] != 1 {
-		return nil, ErrUnknownVersion
+		return nil, base.ErrUnknownVersion
 	}
 
 	// Version 1
-	result, err := v1.Deserialize(buf)
-	if err == v1.ErrNotEnvelope {
-		return nil, ErrNotEnvelope
-	}
-	return result, err
+	return v1.Deserialize(buf)
 }
