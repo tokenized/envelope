@@ -2,11 +2,13 @@
 
 This repository provides common encoding system for wrapping data in Bitcoin OP_RETURN scripts.
 
-It provides a common system for identifying the payload data protocol, providing MetaNet hierarchy information, and encrypting some or all of the payload.
-It supports 3 encryption scenarios through the use of Bitcoin private and public keys, input and output scripts, and Elliptic Curve Diffie Hellman for encryption key generation and sharing.
-- Encrypting data privately.
-- Encrypting data to be shared with one recipient.
-- Encrypting data to be shared with multiple recipients.
+## Envelope v1
+
+Envelope is designed to be as simple and light weight as possible. Envelope's main purpose is to identify and allow combining of encoding and data protocols within Bitcoin script. Multiple protocols can be specified, in order, to describe the order the protocols should be applied.
+
+For example, an Envelope could specify a signing protocol and then a base data protocol. This would mean that the signing protocol should be applied first, which would likely involve parsing out the signature and checking it. Then the data protocol would be used to parse the data fields and apply meaning to them.
+
+Envelope allows combining of independent protocols. This allows each protocol to be single purpose and as simple as possible. Attempting to combine signing, encryption, compression, and data protocols all in one is a mistake because then if just one falls short, or isn't accepted by the ecosystem, the entire protocol needs to be updated. If they are separate then each protocol can much more easily be updated or replaced by a better protocol. Plus developers can pick and choose the protocols that accomplish their goals most effectively without being locked into a specific set.
 
 ## Getting Started
 
