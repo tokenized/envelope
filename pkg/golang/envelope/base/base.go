@@ -22,3 +22,8 @@ var (
 
 type ProtocolID bitcoin.Hex
 type ProtocolIDs []ProtocolID // hex is just byte slice that JSON marshals as hex
+
+type Data struct {
+	ProtocolIDs ProtocolIDs
+	Payload     bitcoin.ScriptItems
+}

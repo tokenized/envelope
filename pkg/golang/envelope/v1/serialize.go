@@ -9,13 +9,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-func Wrap(protocolIDs base.ProtocolIDs, payload bitcoin.ScriptItems) bitcoin.ScriptItems {
-	scriptItems := HeaderScriptItems(protocolIDs)
+func Wrap(data base.Data) bitcoin.ScriptItems {
+	scriptItems := HeaderScriptItems(data.ProtocolIDs)
 
 	// Number of payload push datas
-	scriptItems = append(scriptItems, bitcoin.PushNumberScriptItem(int64(len(payload))))
+	scriptItems = append(scriptItems, bitcoin.PushNumberScriptItem(int64(len(data.Payload))))
 
-	return append(scriptItems, payload...)
+	return append(scriptItems, data.Payload...)
 }
 
 func HeaderScriptItems(protocolIDs base.ProtocolIDs) bitcoin.ScriptItems {
@@ -65,35 +65,35 @@ func WriteHeader(buf *bytes.Buffer, protocolIDs base.ProtocolIDs) error {
 	return nil
 }
 
-func Parse(buf *bytes.Reader) (base.ProtocolIDs, bitcoin.ScriptItems, error) {
+func Parse(buf *bytes.Reader) (base.Data, error) {
 	protocolIDs, err := ParseProtocolIDs(buf)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "protocol ids")
+		return base.Data{}, errors.Wrap(err, "protocol ids")
 	}
 
 	// Payloads
 	payloadCountItem, err := bitcoin.ParseScript(buf)
 	if err != nil {
-		return nil, nil, errors.Wrap(base.ErrInvalidEnvelope,
+		return base.Data{}, errors.Wrap(base.ErrInvalidEnvelope,
 			errors.Wrap(err, "payload count").Error())
 	}
 
 	payloadCount, err := bitcoin.ScriptNumberValue(payloadCountItem)
 	if err != nil {
-		return nil, nil, errors.Wrap(base.ErrInvalidEnvelope,
+		return base.Data{}, errors.Wrap(base.ErrInvalidEnvelope,
 			errors.Wrap(err, "payload count value").Error())
 	}
 	if payloadCount < 0 {
-		return nil, nil, errors.Wrapf(base.ErrInvalidEnvelope, "negative payload count %d",
+		return base.Data{}, errors.Wrapf(base.ErrInvalidEnvelope, "negative payload count %d",
 			payloadCount)
 	}
 
 	payload, err := bitcoin.ParseScriptItems(buf, int(payloadCount))
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "payload")
+		return base.Data{}, errors.Wrap(err, "payload")
 	}
 
-	return protocolIDs, payload, nil
+	return base.Data{protocolIDs, payload}, nil
 }
 
 func ParseHeader(buf *bytes.Reader) error {
