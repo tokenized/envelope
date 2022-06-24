@@ -96,6 +96,37 @@ func Parse(buf *bytes.Reader) (base.Data, error) {
 	return base.Data{protocolIDs, payload}, nil
 }
 
+func ParseAfterHeader(buf *bytes.Reader) (base.Data, error) {
+	protocolIDs, err := ParseOnlyProtocolIDs(buf)
+	if err != nil {
+		return base.Data{}, errors.Wrap(err, "protocol ids")
+	}
+
+	// Payloads
+	payloadCountItem, err := bitcoin.ParseScript(buf)
+	if err != nil {
+		return base.Data{}, errors.Wrap(base.ErrInvalidEnvelope,
+			errors.Wrap(err, "payload count").Error())
+	}
+
+	payloadCount, err := bitcoin.ScriptNumberValue(payloadCountItem)
+	if err != nil {
+		return base.Data{}, errors.Wrap(base.ErrInvalidEnvelope,
+			errors.Wrap(err, "payload count value").Error())
+	}
+	if payloadCount < 0 {
+		return base.Data{}, errors.Wrapf(base.ErrInvalidEnvelope, "negative payload count %d",
+			payloadCount)
+	}
+
+	payload, err := bitcoin.ParseScriptItems(buf, int(payloadCount))
+	if err != nil {
+		return base.Data{}, errors.Wrap(err, "payload")
+	}
+
+	return base.Data{protocolIDs, payload}, nil
+}
+
 func ParseHeader(buf *bytes.Reader) error {
 	// Header
 	if buf.Len() < 5 {
@@ -149,6 +180,48 @@ func ParseProtocolIDs(buf *bytes.Reader) (base.ProtocolIDs, error) {
 		return nil, errors.Wrap(err, "header")
 	}
 
+	// Protocol ID Count
+	protocolIDCountItem, err := bitcoin.ParseScript(buf)
+	if err != nil {
+		return nil, errors.Wrap(base.ErrInvalidEnvelope,
+			errors.Wrap(err, "protocol ID count").Error())
+	}
+
+	protocolIDCount, err := bitcoin.ScriptNumberValue(protocolIDCountItem)
+	if err != nil {
+		return nil, errors.Wrap(base.ErrInvalidEnvelope,
+			errors.Wrap(err, "protocol ID count value").Error())
+	}
+	if protocolIDCount < 0 {
+		return nil, errors.Wrapf(base.ErrInvalidEnvelope, "negative protocol id count %d",
+			protocolIDCount)
+	}
+
+	// Protocol IDs
+	protocolIDs := make(base.ProtocolIDs, protocolIDCount)
+	for i := range protocolIDs {
+		protocolIDItem, err := bitcoin.ParseScript(buf)
+		if err != nil {
+			return nil, errors.Wrap(base.ErrInvalidEnvelope,
+				errors.Wrapf(err, "protocol ID %d", i).Error())
+		}
+
+		switch protocolIDItem.Type {
+		case bitcoin.ScriptItemTypeOpCode:
+			protocolIDs[i] = base.ProtocolID{protocolIDItem.OpCode}
+
+		case bitcoin.ScriptItemTypePushData:
+			protocolIDs[i] = base.ProtocolID(protocolIDItem.Data)
+
+		default:
+			return nil, errors.Wrap(base.ErrInvalidEnvelope, "unknown script item type")
+		}
+	}
+
+	return protocolIDs, nil
+}
+
+func ParseOnlyProtocolIDs(buf *bytes.Reader) (base.ProtocolIDs, error) {
 	// Protocol ID Count
 	protocolIDCountItem, err := bitcoin.ParseScript(buf)
 	if err != nil {

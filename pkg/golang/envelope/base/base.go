@@ -1,6 +1,7 @@
 package base
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -35,6 +36,52 @@ type ProtocolIDs []ProtocolID
 type Data struct {
 	ProtocolIDs ProtocolIDs
 	Payload     bitcoin.ScriptItems
+}
+
+// ParseHeader parses an Envelope header and returns the version. Returns ErrNotEnvelope if it is
+// not an Envelope.
+func ParseHeader(buf *bytes.Reader) (uint8, error) {
+	// Header
+	if buf.Len() < 5 {
+		return 0, ErrNotEnvelope
+	}
+
+	var b byte
+	var err error
+
+	b, err = buf.ReadByte()
+	if err != nil {
+		return 0, errors.Wrap(err, "read op return")
+	}
+
+	if b != bitcoin.OP_RETURN {
+		if b != bitcoin.OP_FALSE {
+			return 0, ErrNotEnvelope
+		}
+
+		b, err = buf.ReadByte()
+		if err != nil {
+			return 0, errors.Wrap(err, "read op return")
+		}
+
+		if b != bitcoin.OP_RETURN {
+			return 0, ErrNotEnvelope
+		}
+	}
+
+	// Envelope Protocol ID
+	_, protocolID, err := bitcoin.ParsePushDataScript(buf)
+	if err != nil {
+		return 0, errors.Wrap(err, "parse protocol ID")
+	}
+	if len(protocolID) != 2 {
+		return 0, ErrNotEnvelope
+	}
+	if protocolID[0] != 0xbd {
+		return 0, ErrNotEnvelope
+	}
+
+	return protocolID[1], nil
 }
 
 func (id ProtocolID) String() string {

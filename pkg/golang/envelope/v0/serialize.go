@@ -3,6 +3,7 @@ package v0
 import (
 	"bytes"
 
+	"github.com/tokenized/envelope/pkg/golang/envelope/base"
 	"github.com/tokenized/envelope/pkg/golang/envelope/v0/protobuf"
 	"github.com/tokenized/pkg/bitcoin"
 
@@ -168,4 +169,79 @@ func Deserialize(buf *bytes.Reader) (*Message, error) {
 	}
 
 	return &result, nil
+}
+
+// Parse reads the Message from script items.
+func Parse(payload bitcoin.ScriptItems) (*Message, error) {
+	if len(payload) < 2 {
+		return nil, ErrNotEnvelope
+	}
+
+	if payload[0].Type != bitcoin.ScriptItemTypePushData {
+		return nil, errors.Wrap(ErrNotEnvelope, "protocol id not data")
+	}
+
+	if payload[1].Type != bitcoin.ScriptItemTypePushData {
+		return nil, errors.Wrap(ErrNotEnvelope, "envelope data not data")
+	}
+
+	var envelope protobuf.Envelope
+	if len(payload[1].Data) != 0 {
+		if err := proto.Unmarshal(payload[1].Data, &envelope); err != nil {
+			return nil, errors.Wrap(err, "envelope protobuf unmarshaling")
+		}
+	}
+
+	result := &Message{
+		payloadProtocol:   base.ProtocolID(payload[0].Data),
+		payloadVersion:    envelope.GetVersion(),
+		payloadType:       envelope.GetType(),
+		payloadIdentifier: envelope.GetIdentifier(),
+	}
+
+	// MetaNet
+	pbMetaNet := envelope.GetMetaNet()
+	if pbMetaNet != nil {
+		result.metaNet = &MetaNet{
+			index:  pbMetaNet.GetIndex(),
+			parent: pbMetaNet.GetParent(),
+		}
+	}
+
+	// Encrypted payloads
+	pbEncryptedPayloads := envelope.GetEncryptedPayloads()
+	result.encryptedPayloads = make([]*EncryptedPayload, 0, len(pbEncryptedPayloads))
+	for _, pbEncryptedPayload := range pbEncryptedPayloads {
+		encryptedPayload := EncryptedPayload{
+			encryptionType: pbEncryptedPayload.EncryptionType,
+		}
+
+		// Sender
+		encryptedPayload.sender = pbEncryptedPayload.GetSender()
+
+		// Receivers
+		pbReceivers := pbEncryptedPayload.GetReceivers()
+		encryptedPayload.receivers = make([]*Receiver, 0, len(pbReceivers))
+		for _, pbReceiver := range pbReceivers {
+			encryptedPayload.receivers = append(encryptedPayload.receivers, &Receiver{
+				index:        pbReceiver.GetIndex(),
+				encryptedKey: pbReceiver.GetEncryptedKey(),
+			})
+		}
+
+		// Payload
+		encryptedPayload.payload = pbEncryptedPayload.GetPayload()
+
+		result.encryptedPayloads = append(result.encryptedPayloads, &encryptedPayload)
+	}
+
+	// Public payload
+	if len(payload) > 2 {
+		if payload[2].Type != bitcoin.ScriptItemTypePushData {
+			return nil, errors.Wrap(ErrNotEnvelope, "payload not data")
+		}
+		result.payload = payload[2].Data
+	}
+
+	return result, nil
 }
