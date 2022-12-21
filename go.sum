@@ -62,8 +62,8 @@ github.com/tokenized/config v0.2.2-0.20220902160347-43a4340c357e h1:YQOhB7sz1qmD
 github.com/tokenized/config v0.2.2-0.20220902160347-43a4340c357e/go.mod h1:DFvDBKoS5+kT3QRJ/6zvhWXNuzuV3gG+ZfWa/ZVpJlc=
 github.com/tokenized/logger v0.1.0 h1:WOttwM4pnRJIkt5jws/ZBgPGAr6ztGjqrCnu+PekO+A=
 github.com/tokenized/logger v0.1.0/go.mod h1:bA5PfUEFwtUy0yEIIq4Q3ZwBk1kIZTkYIRASq3fPw+k=
-github.com/tokenized/pkg v0.4.1-0.20220902162108-2e13eadf8696 h1:7x4nmyz9yVaox98t9WFbZw9s3c7pK7wGBELHhv6bzFs=
-github.com/tokenized/pkg v0.4.1-0.20220902162108-2e13eadf8696/go.mod h1:uUb7b1xHv6KfTB+b+FzAlUNJ/al+K7cEAT2wT2Ltglo=
+github.com/tokenized/pkg v0.4.1-0.20221220203801-70a5d9fe2a8a h1:1JUPJR0gF01jr6hsAfhaxN2DARzeqwUwmZCVwesJvFM=
+github.com/tokenized/pkg v0.4.1-0.20221220203801-70a5d9fe2a8a/go.mod h1:uUb7b1xHv6KfTB+b+FzAlUNJ/al+K7cEAT2wT2Ltglo=
 github.com/tokenized/threads v0.1.1-0.20220902155404-d844f8ac41b5/go.mod h1:Dii75FyJFZwaFWPai5CrczSZpF8vqznaCtkiwDx/WEg=
 github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564 h1:NXXyQVeRVLK8Xu27/hkkjwVOZLk5v4ZBEvvMtqMqznM=
 github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564/go.mod h1:0/YuQQF676+d4CMNclTqGUam1EDwz0B8o03K9pQqA3c=

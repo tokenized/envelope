@@ -92,6 +92,15 @@ func (id ProtocolID) String() string {
 	return fmt.Sprintf("0x%s", hex.EncodeToString(id))
 }
 
+func (ids ProtocolIDs) String() string {
+	result := make([]string, len(ids))
+	for i, id := range ids {
+		result[i] = id.String()
+	}
+
+	return strings.Join(result, ",")
+}
+
 // MarshalJSON converts to json.
 func (id ProtocolID) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%s\"", id)), nil
