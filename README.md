@@ -57,7 +57,7 @@ Bitcoin script number specifying the number of push datas containing payload pro
 
 Specified number of push datas containing the protocol IDs that pertain to the payload.
 
-`PUSH_OP Paylod Push Data Count`
+`PUSH_OP Payload Push Data Count`
 
 Bitcoin script number specifying the number of push datas that make up the payload.
 
